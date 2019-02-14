@@ -37,7 +37,7 @@ function getTypeDescription($type) {
         "dimg" => "Derived Image",
         "thmb" => "Thumbnail",
         "auxl" => "Auxiliary image",
-        "cdsc" => "Content Describe",
+        "cdsc" => "Content Description",
         //
         "iprp" => "Item Properties",
         "ipco" => "Item Property Container",
