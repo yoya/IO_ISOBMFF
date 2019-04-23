@@ -20,23 +20,14 @@ if ($filename === "-") {
 }
 $isobmffdata = file_get_contents($filename);
 
-$opts = array();
+$opts = array(
+    'hexdump'  => isset($options['h']),
+    'typeonly' => isset($options['t']),
+    'verbose'  => isset($options['v']),
+    'debug'    => isset($options['d']),
+    'restrict' => isset($options['r'])
+);
 
-if (isset($options['h'])) {
-    $opts['hexdump'] = true;
-}
-if (isset($options['t'])) {
-    $opts['typeonly'] = true;
-}
-if (isset($options['v'])) {
-    $opts['verbose'] = true;
-}
-if (isset($options['d'])) {
-    $opts['debug'] = true;
-}
-if (isset($options['r'])) {
-    $opts['restrict'] = true;
-}
 
 $isobmff = new IO_ISOBMFF();
 try {
