@@ -414,6 +414,8 @@ class IO_ISOBMFF {
             break;
         case "thmb":
         case "cdsc":
+        case "dimg":
+        case "auxl":
             $box["fromItemID"] = $bit->getUI16BE();
             $box["itemCount"] = $bit->getUI16BE();
             $itemIDArray = [];
@@ -512,17 +514,6 @@ class IO_ISOBMFF {
                 }
             }
             break;
-        case "dimg":
-            $box["fromItemID"] = $bit->getUI16BE();
-            $box["itemCount"] = $bit->getUI16BE();
-            $itemArray = [];
-            for ($i = 0 ; $i < $box["itemCount"] ; $i++) {
-                $item = [];
-                $item["itemID"] = $bit->getUI16BE();
-                $itemArray []= $item;
-            }
-            $box["itemArray"] = $itemArray;
-            break;
         case "dref":
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
@@ -550,14 +541,6 @@ class IO_ISOBMFF {
                 $box["auxSubType"] = null;
             }
             break;
-        case "auxl":
-            $box["fromItemID"] = $bit->getUI16BE();
-            $itemCount = $bit->getUI16BE();
-            $itemArray = [];
-            for ($i = 0 ; $i < $itemCount ; $i++) {
-                $itemArray[] = ["itemID" => $bit->getUI16BE()];
-            }
-            $box["itemArray"] = $itemArray;
             break;
             /*
              * container type
@@ -580,6 +563,16 @@ class IO_ISOBMFF {
             break;
         }
         if ($boxLength) {
+            list($currOffset, $dummy) = $bit->getOffset($nextOffset, 0);
+            if ($currOffset != $nextOffset) {
+                $mesg = "currOffset:$currOffset != (box)nextOffset:$nextOffset";
+                if (empty($opts['restrict'])) {
+                    fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
+                } else {
+                    var_dump($box);
+                    throw new Exception($mesg);
+                }
+            }
             $bit->setOffset($nextOffset, 0);
         } else {
             $bit->getDataUntil(false); // skip to the end
@@ -642,6 +635,8 @@ class IO_ISOBMFF {
             break;
         case "thmb":
         case "cdsc":
+        case "dimg":
+        case "auxl":
             $this->printfBox($box, $indentSpace."  fromItemID:%d".PHP_EOL);
             $this->printfBox($box, $indentSpace."  itemCount:%d".PHP_EOL);
             foreach ($box["itemArray"] as $item) {
@@ -686,12 +681,6 @@ class IO_ISOBMFF {
                 $this->printfBox($box, $indentSpace."  itemType:%s".PHP_EOL);
             }
             $this->printfBox($box, $indentSpace."  itemName:%s contentType:%s contentEncoding:%s".PHP_EOL);
-            break;
-            case "dimg":
-                $this->printfBox($box, $indentSpace."  fromItemID:%d".PHP_EOL);
-                foreach ($box["itemArray"] as $item) {
-                    $this->printfBox($item, $indentSpace."    itemID:%d".PHP_EOL);
-                }
             break;
         case "url ":
             $this->printfBox($box, $indentSpace."  version:%d flags:%d  location:%s".PHP_EOL);
@@ -760,12 +749,6 @@ class IO_ISOBMFF {
             $this->printfBox($box, $indentSpace."  version:%d flags:%d".PHP_EOL);
             $this->printfBox($box, $indentSpace."  auxType:%s".PHP_EOL);
             $this->printfBox($box, $indentSpace."  auxSubType:%s".PHP_EOL);
-            break;
-        case "auxl":
-            $this->printfBox($box, $indentSpace."  fromItemID:%d".PHP_EOL);
-            foreach ($box["itemArray"] as $item) {
-                    $this->printfBox($item, $indentSpace."    itemID:%d".PHP_EOL);
-            }
             break;
         default:
             $box2 = [];
@@ -1082,12 +1065,17 @@ class IO_ISOBMFF {
                      }
                  }
                 break;
+            case "thmb":
+            case "cdsc":
             case "dimg":
+            case "auxl":
                 $bit->putUI16BE($box["fromItemID"]);
+                $box["itemCount"] = count($box["itemArray"]);
                 $itemCount = count($box["itemArray"]);
                 if ($box["itemCount"] !== $itemCount) {
                     throw new Exception("buildBox: box[itemCount]:{$box['itemCount']} != itemCount:$itemCount");
                 }
+                $box["itemCount"] = $itemCount;
                 $bit->putUI16BE($itemCount);
                 foreach ($box["itemArray"] as $item) {
                     $bit->putUI16BE($item["itemID"]);
@@ -1112,15 +1100,6 @@ class IO_ISOBMFF {
                 $bit->putUI8($box["version"]);
                 $bit->putUIBits($box["flags"], 8 * 3);
                 $bit->putUI16BE($box["itemID"]);
-                break;
-            case "thmb":
-            case "cdsc":
-                $bit->putUI16BE($box["fromItemID"]);
-                $box["itemCount"] = count($box["itemArray"]);
-                $bit->putUI16BE($box["itemCount"]);
-                foreach ($box["itemArray"] as $item) {
-                    $bit->putUI16BE($item["itemID"]);
-                }
                 break;
             case "hvcC":
                 $bit->putUI8($box["version"]);
