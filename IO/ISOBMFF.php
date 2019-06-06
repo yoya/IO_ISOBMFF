@@ -1416,7 +1416,11 @@ class IO_ISOBMFF {
                     }
                 }
             }
-            echo " type:".$item["infe"]["type"];
+            if (isset($item["infe"]["type"])) {
+                echo " type:".$item["infe"]["type"];
+            } else {
+                echo " type: (infe type empty)";
+            }
             if (isset($item["iloc"])) {
                 $iloc = $item["iloc"];
                 if (isset($iloc["method"])) {
