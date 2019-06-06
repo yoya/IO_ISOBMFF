@@ -1460,7 +1460,7 @@ class IO_ISOBMFF {
                 echo "    ";
                 foreach ($propIndices as $index) {
                     $i = $index["index"];
-                    echo " [".$i;
+                    echo "[".$i;
                     echo $index["essential"]?"":"?";
                     echo "]";
                     $prop = $this->propTree[$i];
