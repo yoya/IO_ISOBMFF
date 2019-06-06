@@ -1429,6 +1429,32 @@ class IO_ISOBMFF {
                 echo " ref:".$iloc["reference"]." offset:".$iloc["offset"]." length:".$iloc["length"];
             }
             echo PHP_EOL;
+            if (isset($item["iloc"])) {
+                $iloc = $item["iloc"];
+                $method = 0;
+                if (isset($iloc["method"])) {
+                    $method = $iloc["method"];
+                }
+                if ($method == 0) {
+                    $offset = $iloc["offset"];
+                    $length = $iloc["length"];
+                    printf("    (mdat:0x%x,0x%x) ", $offset,$length);
+                    $this->mdatHexDump($offset, $length, 0x10);
+                } else if ($method == 1) {
+                    $idatBoxes = $this->getBoxesByTypes(["idat"]);
+                    if (count($idatBoxes) != 1) {
+                        echo "(count(idatBoxes) != 1)";
+                    }
+                    $idat = $idatBoxes[0];
+                    $offset = $idat["_offset"];
+                    $length = $idat["_length"];
+                    printf("    (idat:0x%x,0x%x) ", $offset,$length);
+                    $this->idatHexDump($offset, $length, 0x10);
+                } else {
+                    echo "(unknown iloc method)";
+                }
+            }
+            echo PHP_EOL;
             if (isset($item["ipma"])) {
                 $propIndices = $item["ipma"];
                 echo "    ";
