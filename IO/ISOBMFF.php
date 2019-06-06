@@ -1492,12 +1492,12 @@ class IO_ISOBMFF {
         }
     }
     function mdatHexDump($offset, $length, $maxLength) {
-        $this->hexDump($this->_isobmffData, $offset, $length, $maxLength);
+        self::hexDump($this->_isobmffData, $offset, $length, $maxLength);
     }
     function idatHexDump($offset, $length, $maxLength) {
         $this->mdatHexDump($offset, $length, $maxLength);
     }
-    function hexDump($data, $offset, $length, $maxLength) {
+    static function hexDump($data, $offset, $length, $maxLength) {
         $n = ($length <= $maxLength)?$length:$maxLength;
         for ($i = 0 ; $i < $n ; $i++) {
             printf("%02X ", ord($data[$offset + $i]));
