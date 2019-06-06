@@ -1275,7 +1275,13 @@ class IO_ISOBMFF {
             case "hvcC":
                 $prop = ["profile" => $box["profileIdc"],
                          "level" => $box["levelIdc"],
-                         "chroma" => $box["chromaFormat"]];
+                         "chroma" => $box["chromaFormat"],
+                         "compatibility" => $box["profileCompatibilityFlags"],
+                         "constraint" => $box["constraintIndicatorFlags"],
+                         "bitdepthLuma" => $box["bitDepthLumaMinus8"]+8,
+                         "bitdepthChroma" => $box["bitDepthChromaMinus8"]+8,
+                         "nalArrays" => $box["nalArrays"]
+                ];
                 break;
             case "ispe":
                 $prop = ["width" => $box["width"],
@@ -1404,6 +1410,25 @@ class IO_ISOBMFF {
                 break;
             }
             echo PHP_EOL;
+            if ($type == "hvcC") {
+                $hvcC = $prop["hvcC"];
+                // var_dump($hvcC);
+                printf("    compatibility:0x%08x constraint:0x%012x bitdepth,%d:%d",
+                       $hvcC["compatibility"], $hvcC["constraint"],
+                       $hvcC["bitdepthLuma"], $hvcC["bitdepthChroma"]);
+                echo PHP_EOL;
+                foreach ($hvcC["nalArrays"] as $nals) {
+                    // var_dump($nals);
+                    $naltype = $nals["NALUnitType"];
+                    echo "    naltype:$naltype ";
+                    foreach ($nals["nalus"] as $nalu) {
+                        $len = $nalu["nalUnitLength"];
+                        echo "(len:$len) ";
+                        self::hexDump($nalu["nalUnit"], 0, $len, 0x10);
+                        echo PHP_EOL;
+                    }
+                }
+            }
         }
         echo "Items:".PHP_EOL;
         foreach ($this->itemTree as $itemID => $item) {
