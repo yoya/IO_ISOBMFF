@@ -1455,9 +1455,23 @@ class IO_ISOBMFF {
                         echo ":".implode(",", $prop[$type]["channels"]);
                         break;
                     }
+                    echo " ";
                 }
                 echo PHP_EOL;
             }
         }
     }
+    function mdatHexDump($offset, $length, $maxLength) {
+        $n = ($length <= $maxLength)?$length:$maxLength;
+        for ($i = 0 ; $i < $n ; $i++) {
+            printf("%02X ", ord($this->_isobmffData[$offset + $i]));
+        }
+        if ($n < $length) {
+            printf("...");
+        }
+    }
+    function idatHexDump($offset, $length, $maxLength) {
+        $this->mdatHexDump($offset, $length, $maxLength);
+    }
+
 }
