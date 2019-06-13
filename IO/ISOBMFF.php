@@ -559,13 +559,15 @@ class IO_ISOBMFF {
             }
             $box["boxList"] = $this->parseBoxList($bit, $dataLen, $type, $opts);
             break;
-        default:
+        default: // mdat, idat
+            $currOffset = $bit->getOffset()[0];
+            $bit->getData($nextOffset - $currOffset);
             break;
         }
         if ($boxLength) {
             list($currOffset, $dummy) = $bit->getOffset($nextOffset, 0);
             if ($currOffset != $nextOffset) {
-                $mesg = "currOffset:$currOffset != (box)nextOffset:$nextOffset";
+                $mesg = "type:$type(boxLen:$boxLength) currOffset:$currOffset != (box)nextOffset:$nextOffset";
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
