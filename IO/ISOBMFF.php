@@ -225,7 +225,7 @@ class IO_ISOBMFF {
                 throw new Exception($mesg);
             }
             $box["preferredRate"] = $bit->getUI32BE();
-            $box["preferredVolume"] = $bit->getUI32BE();
+            $box["preferredVolume"] = $bit->getUI16BE();
             $box["reserved"] = $bit->getData(10);
             $matrixStructure = [];
             for ($i = 0 ; $i < 9 ; $i++) {
