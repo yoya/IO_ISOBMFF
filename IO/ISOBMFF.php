@@ -241,13 +241,25 @@ class IO_ISOBMFF {
             $box["nextTrackID"] = $bit->getUI32BE();
             break;
         case "tkhd":
-            $box["version"] = $bit->getUI8();
+            $boxVersion = $bit->getUI8();
+            $box["version"] = $boxVersion;
             $box["flags"] = $bit->getUIBits(8 * 3);
-            $box["creationTime"] = $bit->getUI32BE();
-            $box["modificationTime"] = $bit->getUI32BE();
-            $box["trackId"] = $bit->getUI32BE();
-            $box["reserved"] = $bit->getData(4);
-            $box["duration"] = $bit->getUI32BE();
+            if ($boxVersion == 0) {
+                $box["creationTime"] = $bit->getUI32BE();
+                $box["modificationTime"] = $bit->getUI32BE();
+                $box["trackId"] = $bit->getUI32BE();
+                $box["reserved"] = $bit->getData(4);
+                $box["duration"] = $bit->getUI32BE();
+            } else if ($boxVersion == 1) {
+                $box["creationTime"] = $bit->getUI64BE();
+                $box["modificationTime"] = $bit->getUI64BE();
+                $box["trackId"] = $bit->getUI32BE();
+                $box["reserved"] = $bit->getData(4);
+                $box["duration"] = $bit->getUI64BE();
+            } else {
+                $mesg = "tkhd box version:$boxVersion != 0,1";
+                throw new Exception($mesg);
+            }
             $box["reserved"] = $bit->getData(4);
             $box["layer"] = $bit->getUI32BE();
             $box["alternateGroup"] = $bit->getUI32BE();
