@@ -239,7 +239,7 @@ class IO_ISOBMFF {
             $box["duration"] = $bit->getUI32BE();
             $box["reserved"] = $bit->getData(4);
             $box["layer"] = $bit->getUI32BE();
-            $box["alternat4eGroup"] = $bit->getUI32BE();
+            $box["alternateGroup"] = $bit->getUI32BE();
             break;
         case "ispe":
             $box["version"] = $bit->getUI8();
