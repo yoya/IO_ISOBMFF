@@ -264,6 +264,15 @@ class IO_ISOBMFF {
             $box["reserved"] = $bit->getData(4);
             $box["layer"] = $bit->getUI32BE();
             $box["alternateGroup"] = $bit->getUI32BE();
+            $box["volume"] = $bit->getUI16BE();
+            $box["reserved"] = $bit->getUI16BE();
+            $matrix = [];
+            foreach (range(0, 8) as $i) {
+                $matrix []= $bit->getSI32BE(); // XXX: SI ? UI ?
+            }
+            $box["matrix"] = $matrix;
+            $box["width"] = $bit->getUI32BE();
+            $box["height"] = $bit->getUI32BE();
             break;
         case "ispe":
             $box["version"] = $bit->getUI8();
