@@ -206,13 +206,24 @@ class IO_ISOBMFF {
             $box["componentFlagsMask"] = $bit->getUI32BE();
             $box["componentName"] = $bit->getData($dataLen - 24);
             break;
-        case "mvhd":
-            $box["version"] = $bit->getUI8();
+        case "mvhd": // ISO/IEC 14496-12:2005(E)
+            $boxVersion = $bit->getUI8();
+            $box["version"] = $boxVersion;
             $box["flags"] = $bit->getUIBits(8 * 3);
-            $box["creationTime"] = $bit->getUI32BE();
-            $box["modificationTime"] = $bit->getUI32BE();
-            $box["timeScale"] = $bit->getUI32BE();
-            $box["duration"] = $bit->getUI32BE();
+            if ($boxVersion == 0) {
+                $box["creationTime"] = $bit->getUI32BE();
+                $box["modificationTime"] = $bit->getUI32BE();
+                $box["timeScale"] = $bit->getUI32BE();
+                $box["duration"] = $bit->getUI32BE();
+            } else if ($boxVersion == 1) {
+                $box["creationTime"] = $bit->getUI64BE();
+                $box["modificationTime"] = $bit->getUI64BE();
+                $box["timeScale"] = $bit->getUI32BE();
+                $box["duration"] = $bit->getUI64BE();
+            } else {
+                $mesg = "mvhd box version:$boxVersion != 0,1";
+                throw new Exception($mesg);
+            }
             $box["preferredRate"] = $bit->getUI32BE();
             $box["preferredVolume"] = $bit->getUI32BE();
             $box["reserved"] = $bit->getData(10);
