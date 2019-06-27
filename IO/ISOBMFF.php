@@ -226,12 +226,13 @@ class IO_ISOBMFF {
             }
             $box["preferredRate"] = $bit->getUI32BE();
             $box["preferredVolume"] = $bit->getUI16BE();
-            $box["reserved"] = $bit->getData(10);
-            $matrixStructure = [];
-            for ($i = 0 ; $i < 9 ; $i++) {
-                $matrixStructure []= $bit->getSI32BE(); // XXX: SI ? UI ?
+            $box["reserved1"] = $bit->getUI16BE();
+            $box["reserved2"] = $bit->getData(8);
+            $matrix = [];
+            foreach (range(0, 8) as $i) {
+                $matrix []= $bit->getSI32BE(); // XXX: SI ? UI ?
             }
-            $box["MatrixStructure"] = $matrixStructure;
+            $box["matrix"] = $matrix;
             $box["previewTime"] = $bit->getUI32BE();
             $box["peviewDuration"] = $bit->getUI32BE();
             $box["posterTime"] = $bit->getUI32BE();
