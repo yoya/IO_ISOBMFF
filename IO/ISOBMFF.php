@@ -1346,7 +1346,7 @@ class IO_ISOBMFF {
             $itemTree[$itemID] = [];
             $itemTree[$itemID]["infe"] = ["type" => $box["itemType"]];
         }
-        $roleBoxes = $this->getBoxesByTypes(["pitm", "thmb", "dimg", "cdsc"]);
+        $roleBoxes = $this->getBoxesByTypes(["pitm", "thmb", "dimg", "cdsc", "auxl"]);
         foreach ($roleBoxes as $box) {
             $type = $box["type"];
             switch ($type) {
@@ -1356,6 +1356,7 @@ class IO_ISOBMFF {
                 break;
             case "thmb":
             case "cdsc":
+            case "auxl":
                 $fromItemID = $box["fromItemID"];
                 foreach ($box["itemArray"] as $item) {
                     $itemID = $item["itemID"];
@@ -1469,7 +1470,7 @@ class IO_ISOBMFF {
         echo "Items:".PHP_EOL;
         foreach ($this->itemTree as $itemID => $item) {
             echo "[$itemID]:";
-            foreach (["pitm", "dimg", "thmb", "cdsc"] as $type) {
+            foreach (["pitm", "dimg", "thmb", "cdsc", "auxl"] as $type) {
                 if (isset($item[$type])) {
                     echo " ".$type;
                     if (isset($item[$type]["from"])) {
