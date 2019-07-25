@@ -1324,10 +1324,11 @@ class IO_ISOBMFF {
                 break;
             case "pixi":
                 $channels = $box["channelArray"];
-                $prop = ["channels" => [$channels[0]["bitsPerChannel"],
-                                        $channels[1]["bitsPerChannel"],
-                                        $channels[2]["bitsPerChannel"]]
-                         ];
+                $bitsPerChannels = [];
+                foreach ($channels as $channel) {
+                    $bitsPerChannels []= $channel["bitsPerChannel"];
+                }
+                $prop = ["channels" => $bitsPerChannels];
                 break;
             }
             $propTree[$index][$type] = $prop;
