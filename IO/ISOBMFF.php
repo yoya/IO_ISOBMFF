@@ -1330,6 +1330,10 @@ class IO_ISOBMFF {
                 }
                 $prop = ["channels" => $bitsPerChannels];
                 break;
+            case "auxC":
+                $prop = ["auxType" => $box["auxType"],
+                         "auxSubType" => $box["auxSubType"]];
+                break;
             }
             $propTree[$index][$type] = $prop;
         }
