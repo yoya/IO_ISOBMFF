@@ -1334,7 +1334,7 @@ class IO_ISOBMFF {
         }
         $ipmaBox = $ipmaBoxes[0];
         if (is_null($itemID)) {
-            $propBoxes = getPropBoxesByPropIndex(null);
+            $propBoxes = $this->getPropBoxesByPropIndex(null);
         } else {
             foreach ($ipmaBox["entryArray"] as $entry) {
                 if ($itemID == $entry["itemID"]) {
