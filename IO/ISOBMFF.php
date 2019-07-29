@@ -1449,6 +1449,9 @@ class IO_ISOBMFF {
             case "ispe":
                 echo " width:".$prop[$type]["width"]." height:".$prop[$type]["height"];
                 break;
+            case "auxC":
+                echo " auxtype:".$prop[$type]["auxType"];
+                break;
             }
             echo PHP_EOL;
             if ($type == "hvcC") {
