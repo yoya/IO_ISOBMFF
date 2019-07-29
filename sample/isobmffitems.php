@@ -3,16 +3,16 @@
 if (is_readable('vendor/autoload.php')) {
     require 'vendor/autoload.php';
 } else {
-    require_once 'IO/HEIF.php';
+    require_once 'IO/ISOBMFF.php';
 }
 
 $options = getopt("f:i:hvtdR");
 
 if ((isset($options['f']) === false) || (($options['f'] !== "-") && is_readable($options['f']) === false)) {
-    fprintf(STDERR, "Usage: php heifitems.php -f <heif_file> [-htvd]\n");
-    fprintf(STDERR, "ex) php heifitems.php -f test.heic -i <itemId> \n");
-    fprintf(STDERR, "ex) php heifitems.php -f test.heic -h \n");
-    fprintf(STDERR, "ex) php heifitems.php -f test.heic -t \n");
+    fprintf(STDERR, "Usage: php isobmffitems.php -f <isobmff_file> [-htvd]\n");
+    fprintf(STDERR, "ex) php isobmffitems.php -f test.heic -i <itemId> \n");
+    fprintf(STDERR, "ex) php isobmffitems.php -f test.heic -h \n");
+    fprintf(STDERR, "ex) php isobmffitems.php -f test.heic -t \n");
     exit(1);
 }
 
@@ -20,7 +20,7 @@ $filename = $options['f'];
 if ($filename === "-") {
     $filename = "php://stdin";
 }
-$heifdata = file_get_contents($filename);
+$isobmffdata = file_get_contents($filename);
 
 $opts = array();
 
@@ -31,21 +31,21 @@ $opts['verbose'] = isset($options['v']);
 $opts['debug'] = isset($options['d']);
 $opts['restrict'] = isset($options['r']);
 
-$heif = new IO_HEIF();
+$isobmff = new IO_ISOBMFF();
 try {
-    $heif->parse($heifdata, $opts);
+    $isobmff->parse($isobmffdata, $opts);
 } catch (Exception $e) {
-    echo "ERROR: heifitems: $filename:".PHP_EOL;
+    echo "ERROR: isobmffitems: $filename:".PHP_EOL;
     echo $e->getMessage()." file:".$e->getFile()." line:".$e->getLine().PHP_EOL;
     echo $e->getTraceAsString().PHP_EOL;
     exit (1);
 }
 
-$itemBoxes = $heif->getItemBoxesByItemID($itemID);
+$itemBoxes = $isobmff->getItemBoxesByItemID($itemID);
 
 foreach ($itemBoxes as $box) {
     if ($opts['typeonly']) {
-        $itemIDs = $heif->getItemIDs($box);
+        $itemIDs = $isobmff->getItemIDs($box);
         $type = $box["type"];
         echo $type;
         switch ($type) {
@@ -54,7 +54,7 @@ foreach ($itemBoxes as $box) {
             break;
         case "auxl":
             $ItemID = $itemIDs[0];
-            $propBoxes = $heif->getPropBoxesByItemID($ItemID);
+            $propBoxes = $isobmff->getPropBoxesByItemID($ItemID);
             foreach ($propBoxes as $propBox) {
                 if ($propBox["type"] === "auxC") {
                     echo "  ".$propBox["auxType"];
@@ -66,6 +66,6 @@ foreach ($itemBoxes as $box) {
         echo PHP_EOL;
     } else {
         $opts['indent'] = 0;
-        $heif->dumpBox($box, $opts);
+        $isobmff->dumpBox($box, $opts);
     }
 }

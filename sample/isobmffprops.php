@@ -3,16 +3,16 @@
 if (is_readable('vendor/autoload.php')) {
     require 'vendor/autoload.php';
 } else {
-    require_once 'IO/HEIF.php';
+    require_once 'IO/ISOBMFF.php';
 }
 
 $options = getopt("f:i:hvtdR");
 
 if ((isset($options['f']) === false) || (($options['f'] !== "-") && is_readable($options['f']) === false)) {
-    fprintf(STDERR, "Usage: php heifprops.php -f <heif_file> [-htvd]\n");
-    fprintf(STDERR, "ex) php heifprops.php -f test.heic -i <propId> \n");
-    fprintf(STDERR, "ex) php heifprops.php -f test.heic -h \n");
-    fprintf(STDERR, "ex) php heifprops.php -f test.heic -t \n");
+    fprintf(STDERR, "Usage: php isobmffprops.php -f <isobmff_file> [-htvd]\n");
+    fprintf(STDERR, "ex) php isobmffprops.php -f test.heic -i <propId> \n");
+    fprintf(STDERR, "ex) php isobmffprops.php -f test.heic -h \n");
+    fprintf(STDERR, "ex) php isobmffprops.php -f test.heic -t \n");
     exit(1);
 }
 
@@ -20,7 +20,7 @@ $filename = $options['f'];
 if ($filename === "-") {
     $filename = "php://stdin";
 }
-$heifdata = file_get_contents($filename);
+$isobmffdata = file_get_contents($filename);
 
 $opts = array();
 
@@ -31,17 +31,17 @@ $opts['verbose'] = isset($options['v']);
 $opts['debug'] = isset($options['d']);
 $opts['restrict'] = isset($options['r']);
 
-$heif = new IO_HEIF();
+$isobmff = new IO_ISOBMFF();
 try {
-    $heif->parse($heifdata, $opts);
+    $isobmff->parse($isobmffdata, $opts);
 } catch (Exception $e) {
-    echo "ERROR: heifprops: $filename:".PHP_EOL;
+    echo "ERROR: isobmffprops: $filename:".PHP_EOL;
     echo $e->getMessage()." file:".$e->getFile()." line:".$e->getLine().PHP_EOL;
     echo $e->getTraceAsString().PHP_EOL;
     exit (1);
 }
 
-$propBoxes = $heif->getPropBoxesByPropIndex($propIndex);
+$propBoxes = $isobmff->getPropBoxesByPropIndex($propIndex);
 
 foreach ($propBoxes as $index => $box) {
     if ($index == 0) {
@@ -62,6 +62,6 @@ foreach ($propBoxes as $index => $box) {
         echo PHP_EOL;
     } else {
         $opts['indent'] = 0;
-        $heif->dumpBox($box, $opts);
+        $isobmff->dumpBox($box, $opts);
     }
 }

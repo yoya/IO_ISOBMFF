@@ -1267,6 +1267,110 @@ class IO_ISOBMFF {
         return $params["boxes"];
     }
 
+    // null $itemID get all item boxes.
+    static function getItemIDs($box) {
+        $itemIDs = [];
+        assert(isset($box["type"]));
+        switch ($box["type"]) {
+        case "infe":
+        case "pitm":
+            $itemIDs = [$box["itemID"]];
+            break;
+        case "thmb":
+        case "cdsc":
+        case "auxl":
+            $itemIDs = [$box["fromItemID"]];
+            break;
+        case "dimg":
+            $itemIDs = [];
+            foreach ($box["itemArray"] as $itemEntry) {
+                $itemIDs []= $itemEntry["itemID"];
+            }
+            break;
+        }
+        return $itemIDs;
+    }
+    var $cacheItemBoxesByItemIDTable = null;
+    function cacheItemBoxesByItemID() {
+        if (! is_null($this->cacheItemBoxesByItemIDTable)) {
+            return ;
+        }
+        $itemBoxTable = [];
+        $this->applyFunctionToBoxTree($this->boxTree, function($box, &$itemBoxTable) {
+            $itemIDs = self::getItemIDs($box);
+            foreach ($itemIDs as $itemID) {
+                if (! isset($itemBoxTable[$itemID]))  {
+                    $itemBoxTable[$itemID] = [];
+                }
+                $itemBoxTable[$itemID] []= $box;
+            }
+        }, $itemBoxTable);
+        $this->cacheItemBoxesByItemIDTable = $itemBoxTable;
+    }
+    function getItemBoxesByItemID($itemID = null) {
+        $this->cacheItemBoxesByItemID();
+        $itemBoxes = null;
+        if (is_null($itemID)) {
+            $itemBoxes = [];
+            $this->applyFunctionToBoxTree($this->boxTree, function($box, &$itemBoxes) {
+                $itemIDs = self::getItemIDs($box);
+                if (count($itemIDs)) {
+                    $itemBoxes []= $box;
+                }
+            }, $itemBoxes);
+        } else {
+            if (isset($this->cacheItemBoxesByItemIDTable[$itemID])) {
+                $itemBoxes = $this->cacheItemBoxesByItemIDTable[$itemID];
+            }
+        }
+        return $itemBoxes;
+    }
+    function getPropBoxesByItemID($itemID = null) {
+        $propBoxes = [];
+        $ipmaBoxes = $this->getBoxesByTypes(["ipma"]);
+        if (count($ipmaBoxes) != 1)  {
+            $ipmaBoxesCount = count($ipmaBoxes);
+            throw new Exception("getPropBoxesByPropIndices: count(ipmaBoxes) must be 1, but $ipmaBoxesCount");
+        }
+        $ipmaBox = $ipmaBoxes[0];
+        if (is_null($itemID)) {
+            $propBoxes = getPropBoxesByPropIndex(null);
+        } else {
+            foreach ($ipmaBox["entryArray"] as $entry) {
+                if ($itemID == $entry["itemID"]) {
+                    foreach ($entry["associationArray"] as $assoc) {
+                        $index = $assoc["propertyIndex"];
+                        $boxes = $this->getPropBoxesByPropIndex($index);
+                        $propBoxes []= $boxes[0];
+                    }
+                }
+            }
+        }
+        return $propBoxes;
+    }
+    var $cachePropBoxByPropIndexTable = null;
+    function cachePropBoxByPropIndex() {
+        if (! is_null($this->cachePropBoxByPropIndexTable)) {
+            return ;
+        }
+        $ipcoBoxes = $this->getBoxesByTypes(["ipco"]);
+        if (count($ipcoBoxes) != 1)  {
+            $ipcoBoxCount = count($ipcoBoxes);
+            throw new Exception("getPropBoxesByPropIndices: count(ipcoBoxes) must be 1, but $ipcoBoxCount");
+        }
+        $propBoxTable = [ [] ]; // for 1 origin. set empty as 0 index.
+        foreach ($ipcoBoxes[0]["boxList"] as $propBox) {
+            $propBoxTable [] = $propBox;
+        }
+        $this->cachePropBoxByPropIndexTable = $propBoxTable;
+    }
+    function getPropBoxesByPropIndex($propIndex = null) {
+        $this->cachePropBoxByPropIndex();
+        if (is_null($propIndex)) {
+            return $this->cachePropBoxByPropIndexTable;
+        }
+        return [$this->cachePropBoxByPropIndexTable[$propIndex]];
+    }
     function analyzeProps($boxList) {
         $ipcoBox = $this->getBoxesByTypes(["ipco"]);
         $propTree = [];
