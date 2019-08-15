@@ -1025,6 +1025,9 @@ class IO_ISOBMFF {
                 $bit->putUI32BE($box["componentFlags"]);
                 $bit->putUI32BE($box["componentFlagsMask"]);
                 $bit->putData($box["componentName"]);
+                if (strpos($box["componentName"], "\0") === false) {
+                    $bit->putData("\0");
+                }
                 break;
             case "iloc":
                 if ($parentType === "iref") {
