@@ -1,7 +1,7 @@
 <?php
 
 /*
-  IO_ISOBMFF class - v2.4
+  IO_ISOBMFF class - v2.5
   (c) 2017/07/26 yoya@awm.jp
   ref) https://developer.apple.com/standards/qtff-2001.pdf
  */
