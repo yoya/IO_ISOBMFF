@@ -205,6 +205,10 @@ class IO_ISOBMFF {
             $box["componentFlags"] = $bit->getUI32BE();
             $box["componentFlagsMask"] = $bit->getUI32BE();
             $box["componentName"] = $bit->getData($dataLen - 24);
+            if (strpos($box["componentName"], "\0") === false) {
+                $mesg = "hdlr componentName need 0 termination";
+                throw new Exception($mesg);
+            }
             break;
         case "mvhd": // ISO/IEC 14496-12:2005(E)
             $boxVersion = $bit->getUI8();
