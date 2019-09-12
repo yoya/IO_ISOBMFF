@@ -443,6 +443,32 @@ class IO_ISOBMFF {
                 $box["itemArray"] = $itemArray;
             }
             break;
+        case "av1C":
+            // https://aomediacodec.github.io/av1-isobmff/#av1codecconfigurationbox-section
+            $box["marker"] = $bit->getUIBit();
+            $box["version"] = $bit->getUIBits(7);
+            //
+            $box["seq_profile"] = $bit->getUIBits(3);
+            $box["seq_level_idx_0"] = $bit->getUIBits(5);
+            //
+            $box["seq_tier_0"] = $bit->getUIBit();
+            $box["high_bitdepth"] = $bit->getUIBit();
+            $box["twelve_bit"] = $bit->getUIBit();
+            $box["monochrome"] = $bit->getUIBit();
+            $box["chroma_subsampling_x"] = $bit->getUIBit();
+            $box["chroma_subsampling_y"] = $bit->getUIBit();
+            $box["chroma_sample_position"] = $bit->getUIBits(2);
+            //
+            $bit->getUIBits(3); // reserved
+            $box["initial_presentation_delay_present"] = $bit->getUIBit();
+            if ($box["initial_presentation_delay_present"]) {
+                $box["initial_presentation_delay_minus_one"] = $bit->getUIBits(4);
+            } else {
+                $bit->getUIBits(4); // reserved
+            }
+
+            $box["configOBUs"]  = $bit->getData($dataLen - 4);
+            break;
         case "iref":
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
@@ -749,6 +775,16 @@ class IO_ISOBMFF {
                     $this->printfBox($nalu, $indentSpace."      nalUnitLength:%d nalUnit:%h".PHP_EOL);
                 }
             }
+            break;
+        case "av1C":
+            $this->printfBox($box, $indentSpace."  marker:%d version:%d seq_profile:%d seq_level_idx_0:%d".PHP_EOL);
+            $this->printfBox($box, $indentSpace."  seq_tier_0:%d high_bitdepth:%d twelve_bit:%d monochrome:%d".PHP_EOL);
+            $this->printfBox($box, $indentSpace."  chroma_subsampling_x:%d chroma_subsampling_y:%d".PHP_EOL);
+            $this->printfBox($box, $indentSpace."  chroma_sample_position:%d initial_presentation_delay_present:%d".PHP_EOL);
+            if ($box["initial_presentation_delay_present"]) {
+                $this->printfBox($box, $indentSpace."  initial_presentation_delay_minus_one:%d".PHP_EOL);
+            }
+            $this->printfBox($box, $indentSpace."  configOBUs:%h".PHP_EOL);
             break;
         case "iloc":
             if (isset($box["version"]) === false) {
@@ -1189,6 +1225,30 @@ class IO_ISOBMFF {
                         $bit->putData($nalu["nalUnit"], $nalUnitLength);
                     }
                 }
+                break;
+            case "av1C":
+                $bit->putUIBit($box["marker"]);
+                $bit->putUIBits($box["version"], 7);
+                //
+                $bit->putUIBits($box["seq_profile"], 3);
+                $bit->putUIBits($box["seq_level_idx_0"], 5);
+                //
+                $bit->putUIBit($box["seq_tier_0"]);
+                $bit->putUIBit($box["high_bitdepth"]);
+                $bit->putUIBit($box["twelve_bit"]);
+                $bit->putUIBit($box["monochrome"]);
+                $bit->putUIBit($box["chroma_subsampling_x"]);
+                $bit->putUIBit($box["chroma_subsampling_y"]);
+                $bit->putUIBits($box["chroma_sample_position"] , 2);
+                //
+                $bit->putUIBits(3); // reserved
+                $bit->putUIBit($box["initial_presentation_delay_present"]);
+                if ($box["initial_presentation_delay_present"]) {
+                    $bit->putUIBits($box["initial_presentation_delay_minus_one"], 4);
+            } else {
+                    $bit->putUIBits(0, 4); // reserved
+                }
+                $bit->putData($box["configOBUs"]);
                 break;
             case "colr":
                 $bit->putData($box["subtype"], 4);
