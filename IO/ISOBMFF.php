@@ -1688,8 +1688,24 @@ class IO_ISOBMFF {
                     $idat = $idatBoxes[0];
                     $offset = $idat["_offset"];
                     $length = $idat["_length"];
-                    printf("    (idat:0x%x,0x%x) ", $offset,$length);
-                    $this->idatHexDump($offset, $length, 0x10);
+                    if ($item["infe"]["type"] === "grid") {
+                        $idatData = substr($this->_isobmffData,
+                                           $offset + 8, $length - 8);
+                        $idatBit = new IO_Bit();
+                        $idatBit->input($idatData);
+                        $v = $idatBit->getUI8();
+                        $f = $idatBit->getUI8();
+                        printf("    (idat) version:%d flags:%d", $v, $f);
+                        $fieldLength =  (($f & 1) + 1) * 16;
+                        printf(" rows-1:%d cols-1:%d",
+                               $idatBit->getUI8(), $idatBit->getUI8());
+                        printf(" width:%d height:%d",
+                               $idatBit->getUIBits($fieldLength),
+                               $idatBit->getUIBits($fieldLength));
+                    } else {
+                        printf("    (idat:0x%x,0x%x) ", $offset,$length);
+                        $this->idatHexDump($offset, $length, 0x10);
+                    }
                 } else {
                     echo "(unknown iloc method)";
                 }
