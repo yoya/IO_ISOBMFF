@@ -1645,11 +1645,15 @@ class IO_ISOBMFF {
                 }
             }
         }
+        $pitmFound = false;
         echo "Items:".PHP_EOL;
         foreach ($this->itemTree as $itemID => $item) {
             echo "[$itemID]:";
             foreach (["pitm", "dimg", "thmb", "cdsc", "auxl"] as $type) {
                 if (isset($item[$type])) {
+                    if ($type === "pitm") {
+                        $pitmFound = true;
+                    }
                     echo " ".$type;
                     if (isset($item[$type]["from"])) {
                         echo ":".$item[$type]["from"];
@@ -1745,6 +1749,10 @@ class IO_ISOBMFF {
                 }
                 echo PHP_EOL;
             }
+        }
+        echo "Warning:".PHP_EOL;
+        if (! $pitmFound) {
+            echo "    pitm not found".PHP_EOL;
         }
     }
     function mdatHexDump($offset, $length, $maxLength) {
