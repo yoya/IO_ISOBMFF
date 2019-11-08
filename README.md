@@ -56,3 +56,8 @@ Items:
 [50]: thmb from:49 type:hvc1 method:0 ref:0 offset:3995 length:22809
 [51]: cdsc from:49 type:Exif method:0 ref:0 offset:26804 length:2182
 ```
+
+# derived classes
+
+- https://github.com/yoya/IO_HEIF
+- https://github.com/yoya/IO_AVIF
