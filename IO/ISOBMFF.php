@@ -70,12 +70,14 @@ function getChromeFormatDescription($format) {
     return "Unknown Chroma Format";
 }
 
-// https://www.itu.int/rec/T-REC-H.265-201304-S
+// https://www.itu.int/rec/T-REC-H.265-201304-S - profile:1-3
+// https://www.itu.int/rec/T-REC-H.265-201906-I - profile:4
 function getProfileIdcDescription($idc) {
     static $profileIdcDescription = [
         1 => "Main profile",
         2 => "Main 10 profile",
         3 => "Main Still Picture profile",
+        4 => "Format range extentions",
     ];
     if (isset($profileIdcDescription[$idc])) {
         return $profileIdcDescription[$idc];
