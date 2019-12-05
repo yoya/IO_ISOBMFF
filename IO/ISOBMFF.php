@@ -934,14 +934,14 @@ class IO_ISOBMFF {
 
     function build($opts = array()) {
         // for iloc => mdat linkage
-        $this->ilocBaseOffsetFieldList = []; // _mdatId, _offsetRelative, fieldOffset, fieldSize
+        $this->ilocOffsetFieldList = []; // _mdatId, _offsetRelative, fieldOffset, fieldSize
         $this->mdatOffsetList = []; // _mdatId, _offset
         //
 
         $bit = new IO_Bit();
         $this->buildBoxList($bit, $this->boxTree, null, $opts);
         //
-        foreach ($this->ilocBaseOffsetFieldList as $ilocBOField) {
+        foreach ($this->ilocOffsetFieldList as $ilocBOField) {
             $_mdatId = $ilocBOField["_mdatId"];
             foreach ($this->mdatOffsetList as $mdatOffset) {
                 if ($_mdatId === $mdatOffset["_mdatId"]) {
@@ -1107,6 +1107,9 @@ class IO_ISOBMFF {
                         $extentCount = count($item["extentArray"]);
                         $bit->putUI16BE($extentCount);
                         foreach ($item["extentArray"] as $extent) {
+                            if ($baseOffsetSize === 0) {
+                                list($fieldOffset, $dummy) = $bit->getOffset();
+                            }
                             $bit->putUIBits($extent["extentOffset"], 8 * $offsetSize);
                             if ($box["version"] >= 1) {
                                 $bit->putUIBits($extent["extentIndex"], 8 * $indexSize);
@@ -1114,12 +1117,17 @@ class IO_ISOBMFF {
                             $bit->putUIBits($extent["extentLength"] , 8 * $lengthSize);
                         }
                         if (isset($item["_mdatId"])) {
-                            $this->ilocBaseOffsetFieldList []= [
+                            $iboField = [
                                 "_mdatId" => $item["_mdatId"],
                                 "_offsetRelative" => $item["_offsetRelative"],
-                                "fieldOffset" => $fieldOffset,
-                                "baseOffsetSize" => $baseOffsetSize,
+                                "fieldOffset" => $fieldOffset
                             ];
+                            if ($baseOffsetSize > 1) {
+                                $iboField["baseOffsetSize"] = $baseOffsetSize;
+                            } else { // use extent field
+                                $iboField["baseOffsetSize"] = $offsetSize;
+                            }
+                            $this->ilocOffsetFieldList []= $iboField;
                         }
                     }
                 }
