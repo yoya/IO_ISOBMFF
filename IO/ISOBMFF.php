@@ -91,6 +91,9 @@ class IO_ISOBMFF {
     var $boxTree = [];
     var $propTree = null;
     var $itemTree = null;
+    // for build
+    var $ilocOffsetFieldList = [];
+    var $mdatOffsetList = [];
     function parse($isobmffData, $opts = array()) {
         $opts["indent"] = 0;
         $bit = new IO_Bit();
