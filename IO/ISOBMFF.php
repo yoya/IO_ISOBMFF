@@ -1,7 +1,7 @@
 <?php
 
 /*
-  IO_ISOBMFF class - v2.6
+  IO_ISOBMFF class - v3.0
   (c) 2017/07/26 yoya@awm.jp
   ref) https://developer.apple.com/standards/qtff-2001.pdf
  */
@@ -172,27 +172,27 @@ class IO_ISOBMFF {
         list($boxOffset, $dummy) = $bit->getOffset();
         $indentSpace = str_repeat("    ", $opts["indent"] - 1);
         $boxLength = $bit->getUI32BE();
-        if ($boxLength <= 1) {
+        if ($boxLength == 1) {
             $boxLength = null;
         } else if ($boxLength < 8) {
             list($offset, $dummy) = $bit->getOffset();
             throw new Exception("parseBox: boxLength($boxLength) < 8 (fileOffset:$offset)");
         }
         $type = $bit->getData(4);
+        if (is_null($boxLength)) {
+            $boxLength = $bit->getUI64BE();
+            $dataLen = $boxLength - 4 - 4 - 8;  // size type extended_size
+        } else {
+            $dataLen = $boxLength - 4 - 4;      // size type
+        }
+        $nextOffset = $boxOffset + $boxLength;
         $box = ["type" => $type, "_offset" => $boxOffset, "_length" => $boxLength];
         if (! empty($opts["debug"])) {
             fwrite(STDERR, "DEBUG: parseBox:$indentSpace type:$type offset:$boxOffset boxLength:$boxLength\n");
         }
-        if ($boxLength && ($bit->hasNextData($boxLength - 8) === false)) {
-            list($offset, $dummy) = $bit->getOffset();
+        list($offset, $dummy) = $bit->getOffset();
+        if ($bit->hasNextData($nextOffset - $offset) === false) {
             throw new Exception("parseBox: hasNext(boxLength:$boxLength - 8) === false (boxOffset:$boxOffset) (fileOffset:$offset)");
-        }
-        if ($boxLength) {
-            $nextOffset = $boxOffset + $boxLength;
-            $dataLen = $boxLength - 8; // 8 = len(4) + type(4)
-        } else {
-            $nextOffset = null;
-            $dataLen = null;
         }
         switch($type) {
         case "ftyp":
@@ -632,24 +632,17 @@ class IO_ISOBMFF {
             $bit->getData($nextOffset - $currOffset);
             break;
         }
-        if ($boxLength) {
-            list($currOffset, $dummy) = $bit->getOffset($nextOffset, 0);
-            if ($currOffset != $nextOffset) {
-                $mesg = "type:$type(boxLen:$boxLength) currOffset:$currOffset != (box)nextOffset:$nextOffset";
-                if (empty($opts['restrict'])) {
-                    fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
-                } else {
-                    var_dump($box);
-                    throw new Exception($mesg);
-                }
+        list($currOffset, $dummy) = $bit->getOffset($nextOffset, 0);
+        if ($currOffset != $nextOffset) {
+            $mesg = "type:$type(boxLen:$boxLength) currOffset:$currOffset != (box)nextOffset:$nextOffset";
+            if (empty($opts['restrict'])) {
+                fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
+            } else {
+                var_dump($box);
+                throw new Exception($mesg);
             }
-            $bit->setOffset($nextOffset, 0);
-        } else {
-            $bit->getDataUntil(false); // skip to the end
-            $currOffset = $bit->getOffset()[0];
-            $boxLength = $currOffset - $box["_offset"];
-            $box["_length"] = $boxLength;
         }
+        $bit->setOffset($nextOffset, 0);
         return $box;
     }
     function dump($opts = array()) {
@@ -940,7 +933,6 @@ class IO_ISOBMFF {
         $this->ilocOffsetFieldList = []; // _mdatId, _offsetRelative, fieldOffset, fieldSize
         $this->mdatOffsetList = []; // _mdatId, _offset
         //
-
         $bit = new IO_Bit();
         $this->buildBoxList($bit, $this->boxTree, null, $opts);
         //
