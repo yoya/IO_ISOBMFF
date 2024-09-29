@@ -1469,8 +1469,7 @@ class IO_ISOBMFF {
                                     if ($tag->tag->ascii) {
                                         $desc = $tag->tag->ascii;
                                         break;
-                                    } else if ($tag->tag->records &&
-                                               $tag->tag->records["String"]) {
+                                    } else if (isset($tag->tag->records["String"])) {
                                         $desc = $tag->tag->records["String"];
                                         break;
                                     }
