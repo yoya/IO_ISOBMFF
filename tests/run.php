@@ -244,5 +244,16 @@ check('iloc v2 itemID', 0x10007, $item['itemID']);
 check('iloc v2 extent', [['extentOffset' => 0x11111111, 'extentIndex' => 0, 'extentLength' => 4]], $item['extentArray']);
 check('iloc v2 rebuild', $data, rebuild($data));
 
+/*
+ * tkhd: layer and alternate_group are 16 bits
+ */
+$data = fullbox('tkhd', 0, 3, pack('NNNNN', 1, 2, 1, 0, 100).str_repeat("\0", 8).
+                pack('nnnn', 0xffff, 5, 0x0100, 0).str_repeat("\0", 36).pack('NN', 0x10000, 0x10000));
+$tkhd = firstBox(parseISOBMFF($data), 'tkhd');
+check('tkhd layer', -1, $tkhd['layer']);
+check('tkhd alternateGroup', 5, $tkhd['alternateGroup']);
+check('tkhd volume', 0x0100, $tkhd['volume']);
+check('tkhd width', 0x10000, $tkhd['width']);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

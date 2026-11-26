@@ -274,9 +274,9 @@ class IO_ISOBMFF {
                 $mesg = "tkhd box version:$boxVersion != 0,1";
                 throw new Exception($mesg);
             }
-            $box["reserved"] = $bit->getData(4);
-            $box["layer"] = $bit->getUI32BE();
-            $box["alternateGroup"] = $bit->getUI32BE();
+            $box["reserved"] = $bit->getData(8);
+            $box["layer"] = $bit->getSI16BE();
+            $box["alternateGroup"] = $bit->getSI16BE();
             $box["volume"] = $bit->getUI16BE();
             $box["reserved"] = $bit->getUI16BE();
             $matrix = [];
