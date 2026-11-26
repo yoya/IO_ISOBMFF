@@ -191,5 +191,11 @@ check('iref count 0 no warning', [], $warnings);
 check('iref count 0 itemArray', [], firstBox($isobmff, 'thmb')['itemArray']);
 check('iref count 0 rebuild', $data, rebuild($data));
 
+/*
+ * "iloc" child of iref build (typo in the item ID)
+ */
+$data = fullbox('iref', 0, 0, box('iloc', pack('nnnn', 1, 2, 2, 3)));
+check('iref iloc rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

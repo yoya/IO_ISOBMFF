@@ -1076,7 +1076,7 @@ class IO_ISOBMFF {
                     $itemCount = count($box["itemArray"]);
                     $bit->putUI16BE($itemCount);
                     foreach ($box["itemArray"] as $item) {
-                        $bit->putUI16BE(item["itemID"]);
+                        $bit->putUI16BE($item["itemID"]);
                     }
                 } else {
                     $bit->putUI8($box["version"]);
