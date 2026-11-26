@@ -215,5 +215,14 @@ check('iinf v1 count', 1, $iinf['count']);
 check('iinf v1 infe', 'hvc1', $iinf['boxList'][0]['itemType']);
 check('iinf v1 rebuild', $data, rebuild($data));
 
+/*
+ * infe version 3: 32-bit item_ID
+ */
+$data = fullbox('infe', 3, 0, pack('Nn', 0x10007, 0)."hvc1Image\0");
+$infe = firstBox(parseISOBMFF($data), 'infe');
+check('infe v3 itemID', 0x10007, $infe['itemID']);
+check('infe v3 itemType', 'hvc1', $infe['itemType']);
+check('infe v3 rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

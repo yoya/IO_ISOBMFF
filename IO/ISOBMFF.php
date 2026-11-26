@@ -571,7 +571,11 @@ class IO_ISOBMFF {
         case "infe":
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
-            $box["itemID"] = $bit->getUI16BE();
+            if ($box["version"] < 3) {
+                $box["itemID"] = $bit->getUI16BE();
+            } else {
+                $box["itemID"] = $bit->getUI32BE();
+            }
             $box["itemProtectionIndex"] = $bit->getUI16BE();
             if ($box["version"] <= 1) {  // XXX: 0 or 1 ???
                 ;
@@ -1144,7 +1148,11 @@ class IO_ISOBMFF {
             case "infe":
                  $bit->putUI8($box["version"]);
                  $bit->putUIBits($box["flags"], 8 * 3);
-                 $bit->putUI16BE($box["itemID"]);
+                 if ($box["version"] < 3) {
+                     $bit->putUI16BE($box["itemID"]);
+                 } else {
+                     $bit->putUI32BE($box["itemID"]);
+                 }
                  $bit->putUI16BE($box["itemProtectionIndex"]);
                  if ($box["version"] <= 1) {  // XXX: 0 or 1 ???
                      ;
