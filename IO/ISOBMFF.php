@@ -101,10 +101,15 @@ class IO_ISOBMFF {
         $this->_isobmffData = $isobmffData;
         $this->boxTree = $this->parseBoxList($bit, strlen($isobmffData), null, $opts);
         // offset linking iloc=baseOffset <=> mdat
+        // base_offset when > 0, otherwise each extent_offset is linked.
+        // item["_mdatId"] links base_offset (or the first extent_offset),
+        // extent["_mdatId"] links each extent_offset.
         $this->applyFunctionToBoxTree2($this->boxTree, function(&$iloc, &$mdat) {
             if (($iloc["type"] !== "iloc") || ($mdat["type"] !== "mdat")) {
                 return ;
             }
+            $mdatStart = $mdat["_offset"];
+            $mdatNext = $mdatStart + $mdat["_length"];
             foreach ($iloc["itemArray"] as &$item) {
                 $itemID = $item["itemID"];
                 if (isset($item["baseOffset"]) &&
@@ -114,11 +119,20 @@ class IO_ISOBMFF {
                         $offset = $item["baseOffset"];
                     } else if (isset($item["extentArray"][0])) {
                         $offset = $item["extentArray"][0]["extentOffset"];
+                        foreach ($item["extentArray"] as &$extent) {
+                            $extentOffset = $extent["extentOffset"];
+                            if (($mdatStart <= $extentOffset) && ($extentOffset < $mdatNext)) {
+                                if (! isset($mdat["_mdatId"])) {
+                                    $mdat["_mdatId"] = mt_rand();
+                                }
+                                $extent["_mdatId"] = $mdat["_mdatId"];
+                                $extent["_offsetRelative"] = $extentOffset - $mdatStart;
+                            }
+                        }
+                        unset($extent);
                     } else {
                         continue;
                     }
-                    $mdatStart = $mdat["_offset"];
-                    $mdatNext = $mdatStart + $mdat["_length"];
                     if (($mdatStart <= $offset) && ($offset < $mdatNext)) {
                         if (! isset($mdat["_mdatId"])) {
                             $mdat["_mdatId"] = mt_rand();
@@ -1140,30 +1154,42 @@ class IO_ISOBMFF {
                         $useBaseOffset = ($baseOffsetSize > 0) && ($item["baseOffset"] > 0);
                         list($fieldOffset, $dummy) = $bit->getOffset();
                         $bit->putUIBits($item["baseOffset"], 8 * $baseOffsetSize);
+                        if ($useBaseOffset && isset($item["_mdatId"])) {
+                            $this->ilocOffsetFieldList []= [
+                                "_mdatId" => $item["_mdatId"],
+                                "_offsetRelative" => $item["_offsetRelative"],
+                                "fieldOffset" => $fieldOffset,
+                                "baseOffsetSize" => $baseOffsetSize
+                            ];
+                        }
                         $extentCount = count($item["extentArray"]);
                         $bit->putUI16BE($extentCount);
+                        $firstExtent = true;
                         foreach ($item["extentArray"] as $extent) {
-                            if (! $useBaseOffset) {
-                                list($fieldOffset, $dummy) = $bit->getOffset();
-                            }
+                            list($fieldOffset, $dummy) = $bit->getOffset();
                             $bit->putUIBits($extent["extentOffset"], 8 * $offsetSize);
                             if ($box["version"] >= 1) {
                                 $bit->putUIBits($extent["extentIndex"], 8 * $indexSize);
                             }
                             $bit->putUIBits($extent["extentLength"] , 8 * $lengthSize);
-                        }
-                        if (isset($item["_mdatId"])) {
-                            $iboField = [
-                                "_mdatId" => $item["_mdatId"],
-                                "_offsetRelative" => $item["_offsetRelative"],
-                                "fieldOffset" => $fieldOffset
-                            ];
-                            if ($useBaseOffset) {
-                                $iboField["baseOffsetSize"] = $baseOffsetSize;
-                            } else { // use extent field
-                                $iboField["baseOffsetSize"] = $offsetSize;
+                            if (! $useBaseOffset) { // use extent field
+                                // extent link, or the item link for the first extent
+                                $link = null;
+                                if (isset($extent["_mdatId"])) {
+                                    $link = $extent;
+                                } else if ($firstExtent && isset($item["_mdatId"])) {
+                                    $link = $item;
+                                }
+                                if (! is_null($link)) {
+                                    $this->ilocOffsetFieldList []= [
+                                        "_mdatId" => $link["_mdatId"],
+                                        "_offsetRelative" => $link["_offsetRelative"],
+                                        "fieldOffset" => $fieldOffset,
+                                        "baseOffsetSize" => $offsetSize
+                                    ];
+                                }
                             }
-                            $this->ilocOffsetFieldList []= $iboField;
+                            $firstExtent = false;
                         }
                     }
                 }

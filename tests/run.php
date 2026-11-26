@@ -353,5 +353,28 @@ $data = $ftyp.fullbox('meta', 0, 0, $iloc($start)).largeBox('mdat', 'AAAA');
 check('largesize rebuild', bin2hex($data), bin2hex(rebuild($data)));
 check('largesize relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
 
+/*
+ * item with several extents: every extent offset is relocated
+ */
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 0, [[1, 0, [[$s, 2], [$s + 2, 2]]]]);
+}, "AAAA");
+check('multi-extent rebuild', bin2hex($data), bin2hex(rebuild($data)));
+check('multi-extent relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 4, [[1, $s, [[0, 2], [2, 2]]]]);
+}, "AAAA");
+check('multi-extent baseOffset relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+// extents in two mdats, each moves by its own amount
+$ftyp = box('ftyp', 'heic'.pack('N', 0).'mif1heic');
+$iloc = function($s1, $s2) {
+    return ilocBox(0, 4, 4, 0, [[1, 0, [[$s1, 2], [$s2, 2]]]]);
+};
+$meta = fullbox('meta', 0, 0, $iloc(0, 0));
+$s1 = strlen($ftyp) + strlen($meta) + 8;
+$s2 = $s1 + 2 + 8;
+$data = $ftyp.fullbox('meta', 0, 0, $iloc($s1, $s2)).box('mdat', 'AB').box('mdat', 'CD');
+check('multi-extent two mdats relocated', 'ABCD', itemBytes(moveMdatAndBuild($data), 1));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
