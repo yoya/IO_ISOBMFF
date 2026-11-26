@@ -235,5 +235,14 @@ check('iref v1 rebuild', $data, rebuild($data));
 $data = fullbox('iref', 0, 0, box('dimg', pack('nnnn', 1, 2, 2, 3)));
 check('iref v0 rebuild', $data, rebuild($data));
 
+/*
+ * iloc version 2: 32-bit item_count and item_ID
+ */
+$data = fullbox('iloc', 2, 0, "\x44\x00".pack('NN', 1, 0x10007).pack('nnn', 0, 0, 1).pack('NN', 0x11111111, 4));
+$item = firstBox(parseISOBMFF($data), 'iloc')['itemArray'][0];
+check('iloc v2 itemID', 0x10007, $item['itemID']);
+check('iloc v2 extent', [['extentOffset' => 0x11111111, 'extentIndex' => 0, 'extentLength' => 4]], $item['extentArray']);
+check('iloc v2 rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

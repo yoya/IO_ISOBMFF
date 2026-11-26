@@ -423,12 +423,14 @@ class IO_ISOBMFF {
                     $indexSize = $bit->getUIBits(4);
                     $box["indexSize"] = $indexSize;
                 }
-                $itemCount = $bit->getUI16BE();
+                // item_count and item_ID are 32 bits in version 2
+                $itemIDBits = ($box["version"] < 2) ? 16 : 32;
+                $itemCount = $bit->getUIBits($itemIDBits);
                 $box["itemCount"] = $itemCount;
                 $itemArray = [];
                 for ($i = 0 ; $i < $itemCount; $i++) {
                     $item = [];
-                    $item["itemID"] = $bit->getUI16BE();
+                    $item["itemID"] = $bit->getUIBits($itemIDBits);
                     if ($box["version"] >= 1) {
                         $item["constructionMethod"] = $bit->getUI16BE();
                     }
@@ -1109,10 +1111,12 @@ class IO_ISOBMFF {
                         $indexSize = $box["indexSize"];
                         $bit->putUIBits($indexSize, 4);
                     }
+                    // item_count and item_ID are 32 bits in version 2
+                    $itemIDBits = ($box["version"] < 2) ? 16 : 32;
                     $itemCount = count($box["itemArray"]);
-                    $bit->putUI16BE($itemCount);
+                    $bit->putUIBits($itemCount, $itemIDBits);
                     foreach ($box["itemArray"] as $item) {
-                        $bit->putUI16BE($item["itemID"]);
+                        $bit->putUIBits($item["itemID"], $itemIDBits);
                         if ($box["version"] >= 1) {
                             $bit->putUI16BE($item["constructionMethod"]);
                         }
