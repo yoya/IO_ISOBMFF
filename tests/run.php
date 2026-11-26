@@ -154,5 +154,16 @@ $data = makeFile(function($s) {
 }, "AAAA");
 check('offsetSize 3 rejected', 'Exception: baseOffsetSize:3 not implement yet.', rebuild($data));
 
+/*
+ * idat-relative offsets (construction_method 1) are not relocated
+ */
+$data = makeFile(function($s) {
+    return ilocBox(1, 4, 4, 0, [[1, 0, [[$s, 4]], 1]]);
+}, "AAAA");
+$iloc = firstBox(parseISOBMFF($data), 'iloc');
+$offset = $iloc['itemArray'][0]['extentArray'][0]['extentOffset'];
+$iloc = firstBox(parseISOBMFF(moveMdatAndBuild($data)), 'iloc');
+check('construction_method 1 not relocated', $offset, $iloc['itemArray'][0]['extentArray'][0]['extentOffset']);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

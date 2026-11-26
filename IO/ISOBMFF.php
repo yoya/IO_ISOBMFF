@@ -107,7 +107,9 @@ class IO_ISOBMFF {
             }
             foreach ($iloc["itemArray"] as &$item) {
                 $itemID = $item["itemID"];
-                if (isset($item["baseOffset"])) {
+                if (isset($item["baseOffset"]) &&
+                    empty($item["constructionMethod"]) &&
+                    empty($item["dataReferenceIndex"])) {
                     if ($item["baseOffset"] > 0) {
                         $offset = $item["baseOffset"];
                     } else {
