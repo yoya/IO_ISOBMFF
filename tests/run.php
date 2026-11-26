@@ -376,5 +376,30 @@ $s2 = $s1 + 2 + 8;
 $data = $ftyp.fullbox('meta', 0, 0, $iloc($s1, $s2)).box('mdat', 'AB').box('mdat', 'CD');
 check('multi-extent two mdats relocated', 'ABCD', itemBytes(moveMdatAndBuild($data), 1));
 
+/*
+ * box size 0 (extends to the end of the file)
+ */
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 0, [[1, 0, [[$s, 4]]]]);
+}, "AAAA");
+$data = substr_replace($data, pack('N', 0), strlen($data) - 12, 4); // mdat size 0
+$isobmff = parseISOBMFF($data);
+$mdat = firstBox($isobmff, 'mdat');
+check('size 0 mdat length', 12, $mdat['_length']);
+check('size 0 rebuild', bin2hex($data), bin2hex(rebuild($data)));
+$out = moveMdatAndBuild($data);
+check('size 0 relocated', 'AAAA', itemBytes($out, 1));
+check('size 0 last box kept', pack('N', 0).'mdat', substr($out, -12, 8));
+// no longer the last box: explicit size
+$isobmff = parseISOBMFF($data);
+$isobmff->boxTree []= ["type" => "pasp", "hspace" => 1, "vspace" => 1];
+$out = $isobmff->build();
+check('size 0 not last box', pack('N', 12).'mdat', substr($out, -28, 8));
+// size 0 inside a container extends to the end of the parent
+$data = fullbox('meta', 0, 0, pack('N', 0).'free'.'xx').box('free', 'yy');
+$meta = firstBox(parseISOBMFF($data), 'meta');
+check('size 0 in container length', 10, $meta['boxList'][0]['_length']);
+check('size 0 in container rebuild', bin2hex(substr_replace($data, pack('N', 10), 12, 4)), bin2hex(rebuild($data)));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

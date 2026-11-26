@@ -174,11 +174,12 @@ class IO_ISOBMFF {
         $boxList = [];
         $opts["indent"] = $opts["indent"] + 1;
         list($boxOffset, $dummy) = $bit->getOffset();
-        while ($bit->hasNextData(8) && ($bit->getOffset()[0] < ($boxOffset + $length))) {
+        $endOffset = $boxOffset + $length;
+        while ($bit->hasNextData(8) && ($bit->getOffset()[0] < $endOffset)) {
             try {
                 $type = str_split($bit->getData(8), 4)[1];
                 $bit->incrementOffset(-8, 0);
-                $box = $this->parseBox($bit, $parentType, $opts);
+                $box = $this->parseBox($bit, $parentType, $opts, $endOffset);
             } catch (Exception $e) {
                 fwrite(STDERR, "ERROR type:$type".PHP_EOL);
                 throw $e;
@@ -188,10 +189,18 @@ class IO_ISOBMFF {
         return $boxList;
     }
     
-    function parseBox($bit, $parentType, $opts) {
+    function parseBox($bit, $parentType, $opts, $parentEnd = null) {
         list($boxOffset, $dummy) = $bit->getOffset();
         $indentSpace = str_repeat("    ", $opts["indent"] - 1);
         $boxLength = $bit->getUI32BE();
+        $sizeZero = false;
+        if ($boxLength == 0) {  // extends to the end of the file (or the parent)
+            if (is_null($parentEnd)) {
+                $parentEnd = strlen($bit->_data);
+            }
+            $boxLength = $parentEnd - $boxOffset;
+            $sizeZero = true;
+        }
         if ($boxLength == 1) {
             $boxLength = null;
         } else if ($boxLength < 8) {
@@ -213,6 +222,9 @@ class IO_ISOBMFF {
         $box = ["type" => $type, "_offset" => $boxOffset, "_length" => $boxLength];
         if ($dataLen === $boxLength - 4 - 4 - 8) {
             $box["_largesize"] = true;  // keep the 64-bit size form on build
+        }
+        if ($sizeZero) {
+            $box["_sizeZero"] = true;  // keep size 0 on build if it is the last box
         }
         if (! empty($opts["debug"])) {
             fwrite(STDERR, "DEBUG: parseBox:$indentSpace type:$type offset:$boxOffset boxLength:$boxLength\n");
@@ -1010,8 +1022,16 @@ class IO_ISOBMFF {
     }
     function buildBoxList($bit, $boxList, $parentType, $opts) {
         list($boxOffset, $dummy) = $bit->getOffset();
+        $lastBox = null;
         foreach ($boxList as $box) {
+            list($lastBoxOffset, $dummy) = $bit->getOffset();
             $this->buildBox($bit, $box, $parentType, $opts);
+            $lastBox = $box;
+        }
+        // size 0 (to the end of the file) is kept only for the last top-level box
+        if (is_null($parentType) && (! empty($lastBox["_sizeZero"])) &&
+            empty($lastBox["_largesize"])) {
+            $bit->setUI32BE(0, $lastBoxOffset);
         }
         list($nextOffset, $dummy) = $bit->getOffset();
         return $nextOffset - $boxOffset;
