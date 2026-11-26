@@ -944,6 +944,45 @@ class IO_ISOBMFF {
             if (in_array($box["type"], $removeTypeList)) {
                 unset($boxList[$idx]);
             } else if (isset($box["boxList"])) {
+                if ($box["type"] === "iprp") {
+                    // drop ipma associations to removed ipco properties,
+                    // and renumber the property indexes after them.
+                    $newIndexTable = [0 => 0]; // 1 origin, 0 is no property
+                    foreach ($box["boxList"] as $child) {
+                        if (($child["type"] === "ipco") && isset($child["boxList"])) {
+                            $newIndex = 0;
+                            foreach ($child["boxList"] as $i => $prop) {
+                                if (in_array($prop["type"], $removeTypeList)) {
+                                    $newIndexTable[$i + 1] = null;
+                                } else {
+                                    $newIndexTable[$i + 1] = ++$newIndex;
+                                }
+                            }
+                        }
+                    }
+                    foreach ($box["boxList"] as &$child) {
+                        if ($child["type"] !== "ipma") {
+                            continue;
+                        }
+                        foreach ($child["entryArray"] as &$entry) {
+                            $associationArray = [];
+                            foreach ($entry["associationArray"] as $assoc) {
+                                $index = $assoc["propertyIndex"];
+                                if (array_key_exists($index, $newIndexTable)) {
+                                    if (is_null($newIndexTable[$index])) {
+                                        continue;
+                                    }
+                                    $assoc["propertyIndex"] = $newIndexTable[$index];
+                                }
+                                $associationArray []= $assoc;
+                            }
+                            $entry["associationArray"] = $associationArray;
+                            $entry["associationCount"] = count($associationArray);
+                        }
+                        unset($entry);
+                    }
+                    unset($child);
+                }
                 $boxList[$idx]["boxList"] = $this->removeBoxByType_r($box["boxList"], $removeTypeList);
             }
         }

@@ -401,5 +401,38 @@ $meta = firstBox(parseISOBMFF($data), 'meta');
 check('size 0 in container length', 10, $meta['boxList'][0]['_length']);
 check('size 0 in container rebuild', bin2hex(substr_replace($data, pack('N', 10), 12, 4)), bin2hex(rebuild($data)));
 
+/*
+ * removeBoxByType of an ipco property: ipma is fixed
+ */
+$infe = function($itemID) {
+    return fullbox('infe', 2, 0, pack('nn', $itemID, 0)."Exif\0");
+};
+$ipco = box('ipco', fullbox('ispe', 0, 0, pack('NN', 1, 1)).
+                    fullbox('pixi', 0, 0, "\x01\x08").
+                    box('pasp', pack('NN', 1, 1)));
+// item 1: ispe(1) pixi(2) pasp(3), item 2: pixi(2) essential
+$ipma = fullbox('ipma', 0, 0, pack('N', 2).pack('n', 1)."\x03\x01\x02\x83".pack('n', 2)."\x01\x82");
+$data = fullbox('meta', 0, 0, ilocBox(1, 4, 4, 0, [[1, 0, [[0, 4]], 1], [2, 0, [[4, 4]], 1]]).
+                fullbox('iinf', 0, 0, pack('n', 2).$infe(1).$infe(2)).
+                box('iprp', $ipco.$ipma).box('idat', "AAAABBBB"));
+$isobmff = parseISOBMFF($data);
+$isobmff->removeBoxByType(["pixi"]);
+$entryArray = firstBox($isobmff, 'ipma')['entryArray'];
+check('remove property ipma item 1', [['essential' => 0, 'propertyIndex' => 1], ['essential' => 1, 'propertyIndex' => 2]], $entryArray[0]['associationArray']);
+check('remove property ipma item 2', [], $entryArray[1]['associationArray']);
+check('remove property ipco', ['ispe', 'pasp'], array_column(firstBox($isobmff, 'ipco')['boxList'], 'type'));
+$isobmff = parseISOBMFF($isobmff->build());
+check('remove property rebuilt ipma', [['essential' => 0, 'propertyIndex' => 1], ['essential' => 1, 'propertyIndex' => 2]], firstBox($isobmff, 'ipma')['entryArray'][0]['associationArray']);
+list($tree, $warnings) = withWarnings(function() use ($isobmff) {
+    ob_start();
+    try {
+        $isobmff->tree();
+    } catch (Throwable $e) {
+        echo get_class($e);
+    }
+    return ob_get_clean();
+});
+check('remove property tree no error', [false, []], [strpos($tree, 'Error'), $warnings]);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
