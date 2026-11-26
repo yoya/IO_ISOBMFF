@@ -138,5 +138,21 @@ $data = makeFile(function($s) {
 }, "AAAA");
 check('baseOffset relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
 
+/*
+ * 8-byte offset fields are relocated, other sizes are rejected
+ */
+$data = makeFile(function($s) {
+    return ilocBox(0, 0, 4, 8, [[1, $s, [[0, 4]]]]);
+}, "AAAA");
+check('baseOffsetSize 8 relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+$data = makeFile(function($s) {
+    return ilocBox(0, 8, 4, 0, [[1, 0, [[$s, 4]]]]);
+}, "AAAA");
+check('offsetSize 8 relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+$data = makeFile(function($s) {
+    return ilocBox(0, 3, 4, 0, [[1, 0, [[$s, 4]]]]);
+}, "AAAA");
+check('offsetSize 3 rejected', 'Exception: baseOffsetSize:3 not implement yet.', rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

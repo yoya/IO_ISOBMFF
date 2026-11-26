@@ -957,8 +957,12 @@ class IO_ISOBMFF {
                     case 4:
                         $bit->setUI32BE($newOffset, $fieldOffset);
                         break;
+                    case 8:
+                        $bit->setUI32BE($newOffset >> 32, $fieldOffset);
+                        $bit->setUI32BE($newOffset & 0xffffffff, $fieldOffset + 4);
+                        break;
                     default:
-                        new Exception("baseOffsetSize:$baseOffsetSize not implement yet.");
+                        throw new Exception("baseOffsetSize:$baseOffsetSize not implement yet.");
                     }
                     break;
                 }
