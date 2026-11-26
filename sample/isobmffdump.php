@@ -6,7 +6,7 @@ if (is_readable('vendor/autoload.php')) {
     require_once 'IO/ISOBMFF.php';
 }
 
-$options = getopt("f:hvtdR");
+$options = getopt("f:hvtdr");
 
 if ((isset($options['f']) === false) || (($options['f'] !== "-") && is_readable($options['f']) === false)) {
     fprintf(STDERR, "Usage: php isobmffdump.php -f <isobmff_file> [-htvd]\n");
