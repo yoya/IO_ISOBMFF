@@ -116,9 +116,11 @@ class IO_ISOBMFF {
                     $mdatStart = $mdat["_offset"];
                     $mdatNext = $mdatStart + $mdat["_length"];
                     if (($mdatStart <= $offset) && ($offset < $mdatNext)) {
-                        $mdatId = mt_rand();
+                        if (! isset($mdat["_mdatId"])) {
+                            $mdat["_mdatId"] = mt_rand();
+                        }
+                        $mdatId = $mdat["_mdatId"];
                         $item["_mdatId"] = $mdatId;
-                        $mdat["_mdatId"] = $mdatId;
                         $offsetRelative = $offset - $mdatStart;
                         $item["_offsetRelative"] = $offsetRelative;
                         $mdat["_offsetRelative"] = $offsetRelative;
