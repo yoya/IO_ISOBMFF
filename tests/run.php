@@ -206,5 +206,14 @@ check('ipma v1 itemID', 0x10007, $entry['itemID']);
 check('ipma v1 association', [['essential' => 1, 'propertyIndex' => 1]], $entry['associationArray']);
 check('ipma v1 rebuild', $data, rebuild($data));
 
+/*
+ * iinf version 1: 32-bit entry_count
+ */
+$data = fullbox('iinf', 1, 0, pack('N', 1).fullbox('infe', 2, 0, pack('nn', 1, 0)."hvc1\0"));
+$iinf = firstBox(parseISOBMFF($data), 'iinf');
+check('iinf v1 count', 1, $iinf['count']);
+check('iinf v1 infe', 'hvc1', $iinf['boxList'][0]['itemType']);
+check('iinf v1 rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

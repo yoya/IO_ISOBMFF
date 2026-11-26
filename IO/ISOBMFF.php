@@ -559,7 +559,7 @@ class IO_ISOBMFF {
         case "iinf":
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
-            if ($box["version"] <= 1) {  // XXX: 0 or 1 ???
+            if ($box["version"] == 0) {
                 $box["count"] = $bit->getUI16BE();
                 $dataLen -= 6;
             } else {
@@ -1012,7 +1012,7 @@ class IO_ISOBMFF {
                 $bit->putUIBits($box["flags"] , 8 * 3);
                 // $count = $box["count"];
                 $count = count($box["boxList"]);
-                if ($box["version"] <= 1) {  // XXX: 0 or 1 ???
+                if ($box["version"] == 0) {
                     $bit->putUI16BE($count);
                     $dataLength = 6;
                 } else {
