@@ -126,5 +126,17 @@ $out = moveMdatAndBuild($data);
 check('shared mdat item 1 relocated', 'AAAA', itemBytes($out, 1));
 check('shared mdat item 2 relocated', 'BBBB', itemBytes($out, 2));
 
+/*
+ * baseOffsetSize 4 with baseOffset 0: the extent offset is relocated
+ */
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 4, [[1, 0, [[$s, 4]]]]);
+}, "AAAA");
+check('baseOffset 0 relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 4, [[1, $s, [[0, 4]]]]);
+}, "AAAA");
+check('baseOffset relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

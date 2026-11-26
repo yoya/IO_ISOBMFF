@@ -1099,12 +1099,14 @@ class IO_ISOBMFF {
                             $bit->putUI16BE($item["constructionMethod"]);
                         }
                         $bit->putUI16BE($item["dataReferenceIndex"]);
+                        // same rule as the iloc <=> mdat linking in parse
+                        $useBaseOffset = ($baseOffsetSize > 0) && ($item["baseOffset"] > 0);
                         list($fieldOffset, $dummy) = $bit->getOffset();
                         $bit->putUIBits($item["baseOffset"], 8 * $baseOffsetSize);
                         $extentCount = count($item["extentArray"]);
                         $bit->putUI16BE($extentCount);
                         foreach ($item["extentArray"] as $extent) {
-                            if ($baseOffsetSize === 0) {
+                            if (! $useBaseOffset) {
                                 list($fieldOffset, $dummy) = $bit->getOffset();
                             }
                             $bit->putUIBits($extent["extentOffset"], 8 * $offsetSize);
@@ -1119,7 +1121,7 @@ class IO_ISOBMFF {
                                 "_offsetRelative" => $item["_offsetRelative"],
                                 "fieldOffset" => $fieldOffset
                             ];
-                            if ($baseOffsetSize > 1) {
+                            if ($useBaseOffset) {
                                 $iboField["baseOffsetSize"] = $baseOffsetSize;
                             } else { // use extent field
                                 $iboField["baseOffsetSize"] = $offsetSize;
