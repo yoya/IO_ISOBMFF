@@ -1755,6 +1755,9 @@ class IO_ISOBMFF {
                                $idatBit->getUIBits($fieldLength),
                                $idatBit->getUIBits($fieldLength));
                     } else {
+                        // item offset is relative to the idat payload
+                        $offset = $idat["_offset"] + 8 + $iloc["offset"];
+                        $length = $iloc["length"];
                         printf("    (idat:0x%x,0x%x) ", $offset,$length);
                         $this->idatHexDump($offset, $length, 0x10);
                     }

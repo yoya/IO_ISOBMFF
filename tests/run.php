@@ -296,5 +296,21 @@ list($itemTree, $warnings) = withWarnings(function() use ($data) {
 check('item tree infe v0', ['type' => null], $itemTree[1]['infe']);
 check('item tree infe v0 no warning', [], $warnings);
 
+/*
+ * tree() hexdump of items in idat (construction_method 1)
+ */
+$infe = function($itemID) {
+    return fullbox('infe', 2, 0, pack('nn', $itemID, 0)."Exif\0");
+};
+$ipco = box('ipco', fullbox('ispe', 0, 0, pack('NN', 1, 1)));
+$ipma = fullbox('ipma', 0, 0, pack('N', 2).pack('n', 1)."\x01\x81".pack('n', 2)."\x01\x81");
+$data = fullbox('meta', 0, 0, ilocBox(1, 4, 4, 0, [[1, 0, [[0, 4]], 1], [2, 0, [[4, 4]], 1]]).
+                fullbox('iinf', 0, 0, pack('n', 2).$infe(1).$infe(2)).
+                box('iprp', $ipco.$ipma).box('idat', "AAAABBBB"));
+ob_start();
+parseISOBMFF($data)->tree();
+preg_match_all('/\(idat:[^)]*\) (.*)/', ob_get_clean(), $matches);
+check('tree idat hexdump', ['41 41 41 41 ', '42 42 42 42 '], $matches[1]);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
