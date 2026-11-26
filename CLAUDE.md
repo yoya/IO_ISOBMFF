@@ -53,6 +53,6 @@ Packagist には依存される側から出す。
 - io_icc を io_isobmff より先に出す (io_isobmff は `yoya/io_icc` に依存する)。
 - io_isobmff と io_hevc を io_heif より先に、io_isobmff を io_avif より先に出す。
 - メジャーバージョンを上げたら、依存側の composer.json の制約がその新しいメジャーを許すように直してから依存側を出す。
-  現在 IO_AVIF は `"yoya/io_isobmff": "~2.0"`、IO_HEIF は `"~2.6"` で、3.x 以降を選べない。
+  今は IO_AVIF が `"~2.0 || ^4.0"`、IO_HEIF が `"~2.6 || ^4.0"` を要求している。
 
 公開する文書 (コミットメッセージ、リリースノート、README、Wiki) には、`./tmp/` 由来のファイル名や中身を入れない。
