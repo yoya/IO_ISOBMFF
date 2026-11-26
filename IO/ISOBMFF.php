@@ -1246,7 +1246,7 @@ class IO_ISOBMFF {
                 $bit->putUIBit($box["chroma_subsampling_y"]);
                 $bit->putUIBits($box["chroma_sample_position"] , 2);
                 //
-                $bit->putUIBits(3); // reserved
+                $bit->putUIBits(0, 3); // reserved
                 $bit->putUIBit($box["initial_presentation_delay_present"]);
                 if ($box["initial_presentation_delay_present"]) {
                     $bit->putUIBits($box["initial_presentation_delay_minus_one"], 4);
