@@ -1,63 +1,174 @@
 IO_ISOBMFF
-======
+==========
 
-ISOBMFF binary perser dumper, converter, powered by PHP.
-bidirectional converter with ISOBMFF
+English version: [README.en.md](README.en.md)
 
-# install
+ISOBMFF (ISO Base Media File Format, ISO/IEC 14496-12) のバイナリを解釈/編集する為のライブラリです。
+主に HEIF (HEIC) と AVIF の画像を対象にしていて、box の木のダンプ、box の削除、ICC プロファイルの追加、書き出しができます。
+書き出すときは、mdat が動いた分だけ iloc のオフセットを書き直します。
+IO_Bit と IO_ICC が必要です。IO_HEIF と IO_AVIF はこれを継承しています。
+利用に制限はかけません。コピーも改変もご自由にどうぞ。MIT ライセンスにしました。
+自分の環境だと動かないとか、機能が欲しいとかいった要望があれば連絡下さい。
+
+# License
+
+MIT License
+
+# Install
 
 ```
 % composer require yoya/io_isobmff
 ```
 
-# require
+# Usage
 
-- IO_Bit
- - https://github.com/yoya/IO_Bit
-- IO_ICC
- - https://github.com/yoya/IO_ICC
-
-## script (sample/*.php)
-
-- isobmffdump.php
+- isobmffdump.php (box の木のダンプ。`-t` で type だけ、`-h` で 16 進ダンプ付き、`-f -` で標準入力から読む)
 
 ```
-% php vendor/yoya/io_isobmff/sample/isobmffdump.php -f input.heic
-type:ftyp(offset:0 len:24):File Type and Compatibility
-  major:mif1 minor:0  alt:mif1, heic
-type:mdat(offset:24 len:139682):Media Data
-  _mdatId:557184717
-  _offsetRelative:8
-  _itemID:1
-type:meta(offset:139706 len:328):Information about items
+% php vendor/yoya/io_isobmff/sample/isobmffdump.php -f input.avif
+|
+type:ftyp(offset:0 len:32):File Type and compatibility
+  major:avif minor:0  alt:mif1, avif, miaf, MA1B
+|
+type:meta(offset:32 len:305):Information about items
   version:0 flags:0
-    type:hdlr(offset:139718 len:53):Handler reference
-      version:0 flags:0
-      componentType:
-      componentSubType:pict
-(omit...)
+|-  type:hdlr(offset:44 len:33):Handler reference
+(omit)
+|-  type:iloc(offset:147 len:44):Item Location
+      version:0 flags:0  offsetSize:4 lengthSize:4 baseOffsetSize:0
+      itemCount:2
+        itemID:1 dataReferenceIndex:0 baseOffset:0
+        extentCount:1
+          extentOffset:409 extentLength:30980
+(omit)
+|-|-|-      type:av1C(offset:246 len:26):
+              marker:1 version:1 seq_profile:0 seq_level_idx_0:13
+              seq_tier_0:0 high_bitdepth:0 twelve_bit:0 monochrome:0
+              chroma_subsampling_x:1 chroma_subsampling_y:1
+              chroma_sample_position:0 initial_presentation_delay_present:0
+              configOBUs: 0a 0c 00 00 00 6a ef bf e1 bd ff f9 80 40
+(omit)
 ```
 
-- isobmfftree.php
+- isobmfftree.php (property と item の一覧。item ごとに、役割・データの位置・先頭のバイト・結びついた property を出す)
 
 ```
-% php vendor/yoya/io_isobmff/sample/isobmfftree.php -f input.heic
+% php vendor/yoya/io_isobmff/sample/isobmfftree.php -f input.avif
 Props:
-[1]: colr subtype:prof
-[2]: hvcC profile:3 level:90 chroma:1
-[3]: ispe width:512 height:512
-(omit...)
+[1]: ispe width:3840 height:2160
+[2]: colr subtype:nclx
+[3]: av1C
+[4]: pixi channels:8,8,8
 Items:
-[1]: dimg from:49 type:hvc1 method:0 ref:0 offset:28986 length:13529
-[2]: dimg from:49 type:hvc1 method:0 ref:0 offset:42515 length:20507
-(omit...)
-[48]: dimg from:49 type:hvc1 method:0 ref:0 offset:804455 length:14580
-[49]: pitm type:grid method:1 ref:0 offset:0 length:8
-[50]: thmb from:49 type:hvc1 method:0 ref:0 offset:3995 length:22809
-[51]: cdsc from:49 type:Exif method:0 ref:0 offset:26804 length:2182
+[1]: pitm type:av01 ref:0 offset:409 length:30980
+    (mdat:0x199,0x7904) 0A 0C 00 00 00 6A EF BF E1 BD FF F9 80 40 32 F2 ...
+    [1?]ispe:3840,2160 [2?]colr:nclx [3]av1C [4?]pixi:8,8,8 
+[2]: cdsc:1 type:Exif ref:0 offset:31389 length:216
+    (mdat:0x7a9d,0xd8) 00 00 00 00 49 49 2A 00 08 00 00 00 02 00 98 82 ...
+Warning:
 ```
 
-# derived classes
+`[1?]` の `?` は essential でない property を表します。
+
+- isobmffitems.php / isobmffprops.php (item ID / property 番号を `-i` で指定して表示。`-t` で一覧)
+
+```
+% php vendor/yoya/io_isobmff/sample/isobmffitems.php -f input.avif -t
+pitm  itemID:1
+infe  type:av01  itemID:1
+infe  type:Exif  itemID:2
+cdsc  itemID:2
+% php vendor/yoya/io_isobmff/sample/isobmffprops.php -f input.avif -t
+ispe  index:1
+colr  index:2  nclx
+av1C  index:3
+pixi  index:4
+```
+
+- isobmffrebuild.php / isobmffdelbox.php / isobmffaddiccp.php (作り直し / box の削除 / ICC プロファイルの追加)
+
+```
+% php vendor/yoya/io_isobmff/sample/isobmffrebuild.php -f input.avif > output.avif
+% php vendor/yoya/io_isobmff/sample/isobmffdelbox.php -f input.avif -t iref > output.avif
+% php vendor/yoya/io_isobmff/sample/isobmffaddiccp.php -f input.avif -p sRGB.icc > output.avif
+```
+
+- PHP から使う
+
+```php
+require_once 'IO/ISOBMFF.php';
+
+$isobmff = new IO_ISOBMFF();
+$isobmff->parse(file_get_contents('input.avif'));
+
+// box を種類で探す (木全体から)
+foreach ($isobmff->getBoxesByTypes(["ispe"]) as $box) {
+    echo $box["width"], "x", $box["height"], PHP_EOL;   // 3840x2160
+}
+// item 1 に結びついた property の box
+foreach ($isobmff->getPropBoxesByItemID(1) as $box) {
+    echo $box["type"], " ";                             // ispe colr av1C pixi
+}
+echo PHP_EOL;
+
+// 編集して書き出す (mdat が動いた分、iloc のオフセットを書き直す)
+$isobmff->removeBoxByType(["iref"]);
+file_put_contents('output.avif', $isobmff->build());
+```
+
+# 設計概要
+
+| クラス・メソッド | 役割 |
+|---|---|
+| `IO_ISOBMFF` | ファイル全体。box の木 (`boxTree`) を持ち、parse / build / dump する |
+| `parse($data, $opts)` / `build($opts)` | 解釈 / 書き出し。`$opts["restrict"]` を付けると、予約ビットや box の長さの食い違いを警告でなく例外にする |
+| `dump($opts)` / `dumpBox($box, $opts)` | box のダンプ (`$opts` の `hexdump`, `typeonly`) |
+| `tree()` / `analyze()` | property と item の一覧 (`propTree`, `itemTree`) を作る / 表示する |
+| `getBoxesByTypes($types)` | 指定した種類の box を木全体から集める |
+| `getItemBoxesByItemID($id)` / `getPropBoxesByItemID($id)` / `getPropBoxesByPropIndex($index)` | item に関わる box (infe, pitm, iref の子) / item に結びついた property / ipco の n 番目 (1 から) の property |
+| `removeBoxByType($types)` | 指定した種類の box を木から消す |
+| `appendICCProfile($iccData)` | ipco に `colr` (prof) を足し、ipma の全 item に結びつける |
+| `IO_Bit`, `IO_ICC` (別パッケージ) | ビット単位の読み書き / colr の ICC プロファイルの表示 |
+
+- box は連想配列で、`type`, `_offset`, `_length` と解釈した値を持つ。子を持つ box (moov, trak, mdia, meta, dinf, iprp, ipco, iinf, iref, dref) は `boxList` に子を持つ。
+- 中身を解釈する box: ftyp, hdlr, mvhd, tkhd, pitm, iloc, iinf, infe, iref (thmb, cdsc, dimg, auxl), ipma, ispe, pasp, hvcC, av1C, colr, pixi, clap, irot, auxC, dref, url 。
+- build は解釈した値から box を作り直す。作り直さない種類 (mvhd, tkhd, auxC, 未知の box) は元のバイト列をそのまま書く。
+- iloc と mdat の対応: parse 時、iloc の item のオフセットが指す mdat に `_mdatId` を付け、item に mdat 先頭からの相対位置 (`_offsetRelative`) を覚える。
+  build 時、mdat の新しい位置から iloc のオフセットの欄を書き直す。idat の中の item (construction_method 1) と外部参照の item は書き直さない。
+- box の version による欄の幅の違い (iloc v2, iinf v1, infe v3, iref v1, ipma v1 の 32bit の ID や個数) に対応している。
+
+# 機能
+
+| 機能 | サンプル (`sample/`) |
+|---|---|
+| box の木のダンプ | `isobmffdump.php` |
+| property と item の一覧 | `isobmfftree.php` |
+| item / property ごとの表示 | `isobmffitems.php`, `isobmffprops.php` |
+| 作り直し | `isobmffrebuild.php` |
+| box の削除 | `isobmffdelbox.php` |
+| ICC プロファイルの追加 | `isobmffaddiccp.php` |
+
+# 既知の制限
+
+- largesize (64bit のサイズ) を使った box は、build で正しく書き出せない (32bit のサイズで書き、中身が 8 バイトずれる)。iPhone の HEIC の mdat などが当たる。
+- 複数の extent に分かれた item は、build で正しく移せない (書き直すのは 1 つの欄だけ)。
+- サイズ 0 (ファイルの終わりまで) の box は読めない (例外になる)。
+- `removeBoxByType()` は box を消すだけで、それを指す番号は直さない。例えば ipco の property を消すと ipma の番号がずれ、tree() が失敗する。
+
+# Test
+
+```
+% php tests/run.php
+```
+
+# Reference
+
+- ISO/IEC 14496-12 (ISO Base Media File Format)
+- ISO/IEC 23008-12 (HEIF)
+- https://aomediacodec.github.io/av1-avif/
+- https://developer.apple.com/standards/qtff-2001.pdf
+
+# Derived classes
 
 - https://github.com/yoya/IO_HEIF
 - https://github.com/yoya/IO_AVIF
