@@ -148,7 +148,6 @@ file_put_contents('output.avif', $isobmff->build());
 
 # Known limitations
 
-- Boxes using largesize (64-bit size) are not written correctly by build (written with a 32-bit size, and the content shifts by 8 bytes). This hits, for example, the mdat of iPhone HEIC files.
 - Items split into several extents are not moved correctly by build (only one field is rewritten).
 - Boxes with size 0 (to the end of the file) cannot be read (an exception is thrown).
 - `removeBoxByType()` only removes boxes and does not fix indices that point to them. For example, removing a property from ipco shifts the ipma indices and tree() fails.

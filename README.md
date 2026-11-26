@@ -150,7 +150,6 @@ file_put_contents('output.avif', $isobmff->build());
 
 # 既知の制限
 
-- largesize (64bit のサイズ) を使った box は、build で正しく書き出せない (32bit のサイズで書き、中身が 8 バイトずれる)。iPhone の HEIC の mdat などが当たる。
 - 複数の extent に分かれた item は、build で正しく移せない (書き直すのは 1 つの欄だけ)。
 - サイズ 0 (ファイルの終わりまで) の box は読めない (例外になる)。
 - `removeBoxByType()` は box を消すだけで、それを指す番号は直さない。例えば ipco の property を消すと ipma の番号がずれ、tree() が失敗する。
