@@ -534,7 +534,11 @@ class IO_ISOBMFF {
             $entryArray = [];
             for ($i = 0 ; $i < $box["entryCount"] ; $i++) {
                 $entry = [];
-                $entry["itemID"] = $bit->getUI16BE();
+                if ($box["version"] < 1) {
+                    $entry["itemID"] = $bit->getUI16BE();
+                } else {
+                    $entry["itemID"] = $bit->getUI32BE();
+                }
                 $entry["associationCount"] = $bit->getUI8();
                 $associationArray = [];
                 for ($j = 0 ; $j < $entry["associationCount"] ; $j++) {
@@ -1299,7 +1303,11 @@ class IO_ISOBMFF {
                 $bit->putUIBits($box["flags"], 8 * 3);
                 $bit->putUI32BE(count($box["entryArray"]));
                 foreach ($box["entryArray"] as $entry) {
-                    $bit->putUI16BE($entry["itemID"]);
+                    if ($box["version"] < 1) {
+                        $bit->putUI16BE($entry["itemID"]);
+                    } else {
+                        $bit->putUI32BE($entry["itemID"]);
+                    }
                     $bit->putUI8(count($entry["associationArray"]));
                     foreach ($entry["associationArray"] as $association) {
                         $bit->putUIBit($association["essential"]);

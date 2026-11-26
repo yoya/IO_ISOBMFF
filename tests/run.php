@@ -197,5 +197,14 @@ check('iref count 0 rebuild', $data, rebuild($data));
 $data = fullbox('iref', 0, 0, box('iloc', pack('nnnn', 1, 2, 2, 3)));
 check('iref iloc rebuild', $data, rebuild($data));
 
+/*
+ * ipma version 1: 32-bit item_ID
+ */
+$data = fullbox('ipma', 1, 0, pack('NN', 1, 0x10007).chr(1).chr(0x81));
+$entry = firstBox(parseISOBMFF($data), 'ipma')['entryArray'][0];
+check('ipma v1 itemID', 0x10007, $entry['itemID']);
+check('ipma v1 association', [['essential' => 1, 'propertyIndex' => 1]], $entry['associationArray']);
+check('ipma v1 rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
