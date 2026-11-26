@@ -255,5 +255,17 @@ check('tkhd alternateGroup', 5, $tkhd['alternateGroup']);
 check('tkhd volume', 0x0100, $tkhd['volume']);
 check('tkhd width', 0x10000, $tkhd['width']);
 
+/*
+ * largesize smaller than the header is rejected (it looped forever)
+ */
+$data = pack('N', 1).'free'.pack('NN', 0, 0).box('free', '');
+try {
+    parseISOBMFF($data);
+    $result = 'parsed';
+} catch (Exception $e) {
+    $result = $e->getMessage();
+}
+check('largesize 0 rejected', 'parseBox: largesize(0) < 16 (fileOffset:16)', $result);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

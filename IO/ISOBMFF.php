@@ -185,6 +185,10 @@ class IO_ISOBMFF {
         $type = $bit->getData(4);
         if (is_null($boxLength)) {
             $boxLength = $bit->getUI64BE();
+            if ($boxLength < 16) {
+                list($offset, $dummy) = $bit->getOffset();
+                throw new Exception("parseBox: largesize($boxLength) < 16 (fileOffset:$offset)");
+            }
             $dataLen = $boxLength - 4 - 4 - 8;  // size type extended_size
         } else {
             $dataLen = $boxLength - 4 - 4;      // size type
