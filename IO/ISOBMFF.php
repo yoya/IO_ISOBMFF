@@ -482,18 +482,21 @@ class IO_ISOBMFF {
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
             $dataLen -= 4;
+            $opts["irefVersion"] = $box["version"];
             $box["boxList"] = $this->parseBoxList($bit, $dataLen, $type, $opts);
             break;
         case "thmb":
         case "cdsc":
         case "dimg":
         case "auxl":
-            $box["fromItemID"] = $bit->getUI16BE();
+            // item IDs are 32 bits in iref version 1
+            $itemIDBits = empty($opts["irefVersion"]) ? 16 : 32;
+            $box["fromItemID"] = $bit->getUIBits($itemIDBits);
             $box["itemCount"] = $bit->getUI16BE();
             $itemArray = [];
             for ($i = 0 ; $i < $box["itemCount"] ; $i++) {
                 $item = [];
-                $item["itemID"] = $bit->getUI16BE();
+                $item["itemID"] = $bit->getUIBits($itemIDBits);
                 $itemArray []= $item;
             }
             $box["itemArray"] = $itemArray;
@@ -1010,6 +1013,7 @@ class IO_ISOBMFF {
                 $bit->putUI8($box["version"]);
                 $bit->putUIBits($box["flags"] , 8 * 3);
                 $dataLength = 4;
+                $opts["irefVersion"] = $box["version"];
                 break;
             case "iinf":
                 $bit->putUI8($box["version"]);
@@ -1174,7 +1178,9 @@ class IO_ISOBMFF {
             case "cdsc":
             case "dimg":
             case "auxl":
-                $bit->putUI16BE($box["fromItemID"]);
+                // item IDs are 32 bits in iref version 1
+                $itemIDBits = empty($opts["irefVersion"]) ? 16 : 32;
+                $bit->putUIBits($box["fromItemID"], $itemIDBits);
                 $box["itemCount"] = count($box["itemArray"]);
                 $itemCount = count($box["itemArray"]);
                 if ($box["itemCount"] !== $itemCount) {
@@ -1183,7 +1189,7 @@ class IO_ISOBMFF {
                 $box["itemCount"] = $itemCount;
                 $bit->putUI16BE($itemCount);
                 foreach ($box["itemArray"] as $item) {
-                    $bit->putUI16BE($item["itemID"]);
+                    $bit->putUIBits($item["itemID"], $itemIDBits);
                 }
             break;
             case "url ":

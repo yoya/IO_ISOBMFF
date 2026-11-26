@@ -224,5 +224,16 @@ check('infe v3 itemID', 0x10007, $infe['itemID']);
 check('infe v3 itemType', 'hvc1', $infe['itemType']);
 check('infe v3 rebuild', $data, rebuild($data));
 
+/*
+ * iref version 1: 32-bit from_item_ID and to_item_ID
+ */
+$data = fullbox('iref', 1, 0, box('dimg', pack('NnNN', 0x10001, 2, 0x10002, 3)));
+$dimg = firstBox(parseISOBMFF($data), 'dimg');
+check('iref v1 fromItemID', 0x10001, $dimg['fromItemID']);
+check('iref v1 itemArray', [['itemID' => 0x10002], ['itemID' => 3]], $dimg['itemArray']);
+check('iref v1 rebuild', $data, rebuild($data));
+$data = fullbox('iref', 0, 0, box('dimg', pack('nnnn', 1, 2, 2, 3)));
+check('iref v0 rebuild', $data, rebuild($data));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
