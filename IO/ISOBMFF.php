@@ -490,7 +490,7 @@ class IO_ISOBMFF {
         case "auxl":
             $box["fromItemID"] = $bit->getUI16BE();
             $box["itemCount"] = $bit->getUI16BE();
-            $itemIDArray = [];
+            $itemArray = [];
             for ($i = 0 ; $i < $box["itemCount"] ; $i++) {
                 $item = [];
                 $item["itemID"] = $bit->getUI16BE();

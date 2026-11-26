@@ -50,6 +50,21 @@ function rebuild($data) {
     }
 }
 
+// [return value of $func, messages of the warnings raised in it]
+function withWarnings($func) {
+    $warnings = [];
+    set_error_handler(function($errno, $errstr) use (&$warnings) {
+        $warnings []= $errstr;
+        return true;
+    });
+    try {
+        $ret = $func();
+    } finally {
+        restore_error_handler();
+    }
+    return [$ret, $warnings];
+}
+
 function firstBox($isobmff, $type) {
     $boxes = $isobmff->getBoxesByTypes([$type]);
     return count($boxes) ? $boxes[0] : null;
@@ -164,6 +179,17 @@ $iloc = firstBox(parseISOBMFF($data), 'iloc');
 $offset = $iloc['itemArray'][0]['extentArray'][0]['extentOffset'];
 $iloc = firstBox(parseISOBMFF(moveMdatAndBuild($data)), 'iloc');
 check('construction_method 1 not relocated', $offset, $iloc['itemArray'][0]['extentArray'][0]['extentOffset']);
+
+/*
+ * iref reference with reference_count 0
+ */
+$data = fullbox('iref', 0, 0, box('thmb', pack('nn', 2, 0)));
+list($isobmff, $warnings) = withWarnings(function() use ($data) {
+    return parseISOBMFF($data);
+});
+check('iref count 0 no warning', [], $warnings);
+check('iref count 0 itemArray', [], firstBox($isobmff, 'thmb')['itemArray']);
+check('iref count 0 rebuild', $data, rebuild($data));
 
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
