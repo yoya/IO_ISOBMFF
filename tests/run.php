@@ -284,5 +284,17 @@ check('item tree extents length', ['reference' => 0, 'offset' => $start, 'length
 check('item tree no extent', ['reference' => 0, 'offset' => 0, 'length' => 0], $itemTree[3]['iloc']);
 check('item tree no warning', [], $warnings);
 
+/*
+ * infe version 0 (no item_type) in the item tree
+ */
+$data = fullbox('iinf', 0, 0, pack('n', 1).fullbox('infe', 0, 0, pack('nn', 1, 0)."Image\0"));
+list($itemTree, $warnings) = withWarnings(function() use ($data) {
+    $isobmff = parseISOBMFF($data);
+    $isobmff->analyzeItems(null);
+    return $isobmff->itemTree;
+});
+check('item tree infe v0', ['type' => null], $itemTree[1]['infe']);
+check('item tree infe v0 no warning', [], $warnings);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

@@ -1565,7 +1565,8 @@ class IO_ISOBMFF {
         foreach ($infeBoxes as $box) {
             $itemID  = $box["itemID"];
             $itemTree[$itemID] = [];
-            $itemTree[$itemID]["infe"] = ["type" => $box["itemType"]];
+            $itemType = isset($box["itemType"]) ? $box["itemType"] : null;
+            $itemTree[$itemID]["infe"] = ["type" => $itemType];
         }
         $roleBoxes = $this->getBoxesByTypes(["pitm", "thmb", "dimg", "cdsc", "auxl"]);
         foreach ($roleBoxes as $box) {
