@@ -337,5 +337,21 @@ foreach (['isobmffdump.php', 'isobmffitems.php', 'isobmffprops.php'] as $script)
     check("$script -r", 1, runSample($script, '-r', $data));
 }
 
+/*
+ * box with 64-bit largesize: rebuilt in the same form
+ */
+function largeBox($type, $payload) {
+    return pack('N', 1).$type.pack('NN', 0, 16 + strlen($payload)).$payload;
+}
+$ftyp = box('ftyp', 'heic'.pack('N', 0).'mif1heic');
+$iloc = function($s) {
+    return ilocBox(0, 4, 4, 0, [[1, 0, [[$s, 4]]]]);
+};
+$meta = fullbox('meta', 0, 0, $iloc(0));
+$start = strlen($ftyp) + strlen($meta) + 16;
+$data = $ftyp.fullbox('meta', 0, 0, $iloc($start)).largeBox('mdat', 'AAAA');
+check('largesize rebuild', bin2hex($data), bin2hex(rebuild($data)));
+check('largesize relocated', 'AAAA', itemBytes(moveMdatAndBuild($data), 1));
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);

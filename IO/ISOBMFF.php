@@ -197,6 +197,9 @@ class IO_ISOBMFF {
         }
         $nextOffset = $boxOffset + $boxLength;
         $box = ["type" => $type, "_offset" => $boxOffset, "_length" => $boxLength];
+        if ($dataLen === $boxLength - 4 - 4 - 8) {
+            $box["_largesize"] = true;  // keep the 64-bit size form on build
+        }
         if (! empty($opts["debug"])) {
             fwrite(STDERR, "DEBUG: parseBox:$indentSpace type:$type offset:$boxOffset boxLength:$boxLength\n");
         }
@@ -1004,11 +1007,17 @@ class IO_ISOBMFF {
         $bit->putUI32BE(0); // length field.
         $type = $box["type"];
         $bit->putData($type);
+        $headerSize = 8;
+        if (! empty($box["_largesize"])) {
+            $bit->putUI32BE(0); // largesize field (64-bit)
+            $bit->putUI32BE(0);
+            $headerSize = 16;
+        }
         //
         $origOffset = isset($box["_offset"])?$box["_offset"]:null;
         $origLength = isset($box["_length"])?$box["_length"]:null;
-        $origDataOffset = $origOffset + 8;
-        $origDataLength = $origLength - 8;
+        $origDataOffset = $origOffset + $headerSize;
+        $origDataLength = $origLength - $headerSize;
         if (! empty($opts["debug"])) {
             fwrite(STDERR, "DEBUG: buildBox: type:$type boxOffset:$boxOffset origOffset:$origOffset origLength:$origLength\n");
         }
@@ -1366,10 +1375,16 @@ class IO_ISOBMFF {
                 break;
             }
             list($currentOffset, $dummy) = $bit->getOffset();
-            $dataLength = $currentOffset - ($boxOffset + 8);
+            $dataLength = $currentOffset - ($boxOffset + $headerSize);
         }
-        $boxLength = 8 + $dataLength;
-        $bit->setUI32BE($boxLength, $boxOffset);
+        $boxLength = $headerSize + $dataLength;
+        if ($headerSize === 16) {
+            $bit->setUI32BE(1, $boxOffset);
+            $bit->setUI32BE(intdiv($boxLength, 0x100000000), $boxOffset + 8);
+            $bit->setUI32BE($boxLength % 0x100000000, $boxOffset + 12);
+        } else {
+            $bit->setUI32BE($boxLength, $boxOffset);
+        }
     }
     function getBoxesByTypes($types) {
         $params = ['types' => $types, 'boxes' => []];
