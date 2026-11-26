@@ -126,15 +126,17 @@ file_put_contents('output.avif', $isobmff->build());
 | `tree()` / `analyze()` | property と item の一覧 (`propTree`, `itemTree`) を作る / 表示する |
 | `getBoxesByTypes($types)` | 指定した種類の box を木全体から集める |
 | `getItemBoxesByItemID($id)` / `getPropBoxesByItemID($id)` / `getPropBoxesByPropIndex($index)` | item に関わる box (infe, pitm, iref の子) / item に結びついた property / ipco の n 番目 (1 から) の property |
-| `removeBoxByType($types)` | 指定した種類の box を木から消す |
+| `removeBoxByType($types)` | 指定した種類の box を木から消す (ipco の property を消すと、ipma の結びつきも消して番号を詰める) |
 | `appendICCProfile($iccData)` | ipco に `colr` (prof) を足し、ipma の全 item に結びつける |
 | `IO_Bit`, `IO_ICC` (別パッケージ) | ビット単位の読み書き / colr の ICC プロファイルの表示 |
 
 - box は連想配列で、`type`, `_offset`, `_length` と解釈した値を持つ。子を持つ box (moov, trak, mdia, meta, dinf, iprp, ipco, iinf, iref, dref) は `boxList` に子を持つ。
 - 中身を解釈する box: ftyp, hdlr, mvhd, tkhd, pitm, iloc, iinf, infe, iref (thmb, cdsc, dimg, auxl), ipma, ispe, pasp, hvcC, av1C, colr, pixi, clap, irot, auxC, dref, url 。
 - build は解釈した値から box を作り直す。作り直さない種類 (mvhd, tkhd, auxC, 未知の box) は元のバイト列をそのまま書く。
-- iloc と mdat の対応: parse 時、iloc の item のオフセットが指す mdat に `_mdatId` を付け、item に mdat 先頭からの相対位置 (`_offsetRelative`) を覚える。
+- iloc と mdat の対応: parse 時、iloc の item のオフセット (base_offset が 0 より大きければそれ、でなければ各 extent の extent_offset) が指す mdat に `_mdatId` を付け、
+  item (base_offset か最初の extent) と各 extent に mdat 先頭からの相対位置 (`_offsetRelative`) を覚える。
   build 時、mdat の新しい位置から iloc のオフセットの欄を書き直す。idat の中の item (construction_method 1) と外部参照の item は書き直さない。
+- サイズ 0 (ファイルの終わりまで) の box も読める (親の box の中なら親の終わりまで)。build は、それが最上位の最後の box のままならサイズ 0 で書き、そうでなければサイズを書く。
 - box の version による欄の幅の違い (iloc v2, iinf v1, infe v3, iref v1, ipma v1 の 32bit の ID や個数) に対応している。
 
 # 機能
@@ -150,9 +152,8 @@ file_put_contents('output.avif', $isobmff->build());
 
 # 既知の制限
 
-- 複数の extent に分かれた item は、build で正しく移せない (書き直すのは 1 つの欄だけ)。
-- サイズ 0 (ファイルの終わりまで) の box は読めない (例外になる)。
-- `removeBoxByType()` は box を消すだけで、それを指す番号は直さない。例えば ipco の property を消すと ipma の番号がずれ、tree() が失敗する。
+- base_offset を使う item の extent が複数の mdat にまたがると、build で正しく移せない (書き直すのは base_offset だけ)。
+- `removeBoxByType()` が直すのは ipma の property の番号だけ。例えば infe を消しても iloc や iref の item はそのまま残る。
 
 # Test
 

@@ -124,15 +124,17 @@ file_put_contents('output.avif', $isobmff->build());
 | `tree()` / `analyze()` | Build / print the property and item lists (`propTree`, `itemTree`) |
 | `getBoxesByTypes($types)` | Collect boxes of the given types from the whole tree |
 | `getItemBoxesByItemID($id)` / `getPropBoxesByItemID($id)` / `getPropBoxesByPropIndex($index)` | Boxes about an item (infe, pitm, iref children) / properties associated with an item / the n-th (from 1) property in ipco |
-| `removeBoxByType($types)` | Remove boxes of the given types from the tree |
+| `removeBoxByType($types)` | Remove boxes of the given types from the tree (removing an ipco property also removes its ipma associations and renumbers the indices) |
 | `appendICCProfile($iccData)` | Add a `colr` (prof) to ipco and associate it with every item in ipma |
 | `IO_Bit`, `IO_ICC` (separate packages) | Bit-level reading and writing / printing the ICC profile in colr |
 
 - A box is an associative array with `type`, `_offset`, `_length` and the parsed values. Boxes with children (moov, trak, mdia, meta, dinf, iprp, ipco, iinf, iref, dref) hold them in `boxList`.
 - Boxes whose content is parsed: ftyp, hdlr, mvhd, tkhd, pitm, iloc, iinf, infe, iref (thmb, cdsc, dimg, auxl), ipma, ispe, pasp, hvcC, av1C, colr, pixi, clap, irot, auxC, dref, url .
 - build rebuilds boxes from the parsed values. Types it does not rebuild (mvhd, tkhd, auxC, unknown boxes) are written as the original bytes.
-- iloc to mdat link: at parse, the mdat that an iloc item offset points into gets an `_mdatId`, and the item remembers its position relative to the mdat start (`_offsetRelative`).
-  At build, the iloc offset field is rewritten from the new mdat position. Items in idat (construction_method 1) and externally referenced items are not rewritten.
+- iloc to mdat link: at parse, the mdat that an iloc item offset (base_offset if it is greater than 0, otherwise the extent_offset of each extent) points into gets an `_mdatId`,
+  and the item (base_offset or the first extent) and each extent remember their position relative to the mdat start (`_offsetRelative`).
+  At build, the iloc offset fields are rewritten from the new mdat position. Items in idat (construction_method 1) and externally referenced items are not rewritten.
+- Boxes with size 0 (to the end of the file) are read (to the end of the parent inside another box). build writes size 0 again if the box is still the last top-level box, otherwise it writes the size.
 - Field widths that depend on the box version are handled (32-bit IDs and counts of iloc v2, iinf v1, infe v3, iref v1, ipma v1).
 
 # Features
@@ -148,9 +150,8 @@ file_put_contents('output.avif', $isobmff->build());
 
 # Known limitations
 
-- Items split into several extents are not moved correctly by build (only one field is rewritten).
-- Boxes with size 0 (to the end of the file) cannot be read (an exception is thrown).
-- `removeBoxByType()` only removes boxes and does not fix indices that point to them. For example, removing a property from ipco shifts the ipma indices and tree() fails.
+- Items that use base_offset and whose extents span several mdats are not moved correctly by build (only base_offset is rewritten).
+- `removeBoxByType()` fixes only the ipma property indices. For example, removing an infe leaves the item in iloc and iref.
 
 # Test
 
