@@ -112,8 +112,10 @@ class IO_ISOBMFF {
                     empty($item["dataReferenceIndex"])) {
                     if ($item["baseOffset"] > 0) {
                         $offset = $item["baseOffset"];
-                    } else {
+                    } else if (isset($item["extentArray"][0])) {
                         $offset = $item["extentArray"][0]["extentOffset"];
+                    } else {
+                        continue;
                     }
                     $mdatStart = $mdat["_offset"];
                     $mdatNext = $mdatStart + $mdat["_length"];
@@ -1598,11 +1600,12 @@ class IO_ISOBMFF {
                 $method = isset($item["constructionMethod"])?$item["constructionMethod"]:null;
                 $reference = $item["dataReferenceIndex"];
                 $offset = $item["baseOffset"];
+                if (isset($item["extentArray"][0])) {
+                    $offset += $item["extentArray"][0]["extentOffset"];
+                }
+                $length = 0;
                 foreach ($item["extentArray"] as $extent) {
-                    if (($offset === 0) && ($extent["extentOffset"])) {
-                        $offset = $extent["extentOffset"];
-                    }
-                    $length = $extent["extentLength"];
+                    $length += $extent["extentLength"];
                 }
                 $itemTree[$itemID]["iloc"] = ["reference" => $reference,
                                               "offset"    => $offset,

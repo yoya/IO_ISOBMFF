@@ -267,5 +267,22 @@ try {
 }
 check('largesize 0 rejected', 'parseBox: largesize(0) < 16 (fileOffset:16)', $result);
 
+/*
+ * item offset and length in the item tree
+ */
+$data = makeFile(function($s) {
+    return ilocBox(0, 4, 4, 4, [[1, $s, [[4, 4]]], [2, 0, [[$s, 2], [$s + 2, 2]]], [3, 0, []]]);
+}, "AAAABBBB");
+list($itemTree, $warnings) = withWarnings(function() use ($data) {
+    $isobmff = parseISOBMFF($data);
+    $isobmff->analyzeItems(null);
+    return $isobmff->itemTree;
+});
+$start = strpos($data, "AAAABBBB");
+check('item tree baseOffset + extentOffset', ['reference' => 0, 'offset' => $start + 4, 'length' => 4], $itemTree[1]['iloc']);
+check('item tree extents length', ['reference' => 0, 'offset' => $start, 'length' => 4], $itemTree[2]['iloc']);
+check('item tree no extent', ['reference' => 0, 'offset' => 0, 'length' => 0], $itemTree[3]['iloc']);
+check('item tree no warning', [], $warnings);
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
