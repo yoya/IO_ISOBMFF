@@ -338,6 +338,32 @@ foreach (['isobmffdump.php', 'isobmffitems.php', 'isobmffprops.php'] as $script)
 }
 
 /*
+ * hvcC NAL array with reserved bit 1 (libheif 1.23 heif-enc output):
+ * accepted without restrict, and kept by build
+ */
+$hvcC = box('hvcC', "\x01\x01".pack('N', 0x60000000).str_repeat("\0", 6)."\x5a"."\xf0\x00".
+            "\xfc\xfd\xf8\xf8\x00\x00\x0f\x02".
+            "\x60\x00\x01\x00\x02\x40\x01".   // reserved 1, VPS
+            "\x21\x00\x01\x00\x02\x42\x01");  // array_completeness 0, reserved 0, SPS
+$data = box('ftyp', 'heic'.pack('N', 0).'mif1heic').fullbox('meta', 0, 0, box('iprp', box('ipco', $hvcC)));
+$nalArrays = firstBox(parseISOBMFF($data), 'hvcC')['nalArrays'];
+check('hvcC NAL reserved kept', [1, false], [$nalArrays[0]['reserved'], isset($nalArrays[1]['reserved'])]);
+check('hvcC NAL type after reserved', [32, 33], array_column($nalArrays, 'NALUnitType'));
+check('hvcC NAL reserved rebuild', bin2hex($data), bin2hex(rebuild($data)));
+try {
+    parseISOBMFF($data, ['restrict' => true]);
+    $e = null;
+} catch (Exception $e) {
+}
+check('hvcC NAL reserved restrict', true, $e !== null && strpos($e->getMessage(), 'reserved(1)') !== false);
+ob_start();
+parseISOBMFF($data)->dump();
+check('hvcC NAL reserved dump', 1, substr_count(ob_get_clean(), 'reserved:1 NALUnitType:32'));
+foreach (['isobmffdump.php', 'isobmffitems.php', 'isobmffprops.php'] as $script) {
+    check("$script hvcC NAL reserved without -r", 0, runSample($script, '', $data));
+}
+
+/*
  * box with 64-bit largesize: rebuilt in the same form
  */
 function largeBox($type, $payload) {

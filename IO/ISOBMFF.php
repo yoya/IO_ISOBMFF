@@ -412,11 +412,13 @@ class IO_ISOBMFF {
             for ($i = 0 ; $i < $numOfArrays ; $i++) {
                 $nal = [];
                 $nal["array_completeness"] = $bit->getUIBit();
+                // reserved (should be 0, but libheif 1.23 writes 1)
                 $reserved = $bit->getUIBit();
                 if ($reserved !== 0) {
-                    var_dump($box);
-                    var_dump($nalArrays);
-                    throw new Exception("reserved({$reserved}) !== 0 at L%d");
+                    if (! empty($opts['restrict'])) {
+                        throw new Exception(sprintf("hvcC NAL array reserved({$reserved}) !== 0 at L%d", __LINE__));
+                    }
+                    $nal["reserved"] = $reserved;  // kept for build
                 }
                 $nal["NALUnitType"] = $bit->getUIBits(6);
                 $nal["numNalus"] = $numNalus = $bit->getUI16BE();
@@ -819,7 +821,11 @@ class IO_ISOBMFF {
             $this->printfBox($box, $indentSpace."  avgFrameRate:%d constantFrameRate:%d".PHP_EOL);
             $this->printfBox($box, $indentSpace."  numTemporalLayers:%d temporalIdNested:%d lengthSizeMinusOne:%d".PHP_EOL);
             foreach ($box["nalArrays"] as $nal) {
-                $this->printfBox($nal, $indentSpace."    array_completeness:%d NALUnitType:%d".PHP_EOL);
+                if (isset($nal["reserved"])) {
+                    $this->printfBox($nal, $indentSpace."    array_completeness:%d reserved:%d NALUnitType:%d".PHP_EOL);
+                } else {
+                    $this->printfBox($nal, $indentSpace."    array_completeness:%d NALUnitType:%d".PHP_EOL);
+                }
                 foreach ($nal["nalus"] as $nalu) {
                     $nalu["nalUnitLength"] = strlen($nalu["nalUnit"]);
                     $this->printfBox($nalu, $indentSpace."      nalUnitLength:%d nalUnit:%h".PHP_EOL);
@@ -1352,7 +1358,7 @@ class IO_ISOBMFF {
                 $bit->putUI8(count($box["nalArrays"]));
                 foreach ($box["nalArrays"] as $nal) {
                     $bit->putUIBit($nal["array_completeness"]);
-                    $bit->putUIBit(0); // reserved
+                    $bit->putUIBit(isset($nal["reserved"]) ? $nal["reserved"] : 0); // reserved
                     $bit->putUIBits($nal["NALUnitType"], 6);
 
                     $bit->putUI16BE(count($nal["nalus"]));
