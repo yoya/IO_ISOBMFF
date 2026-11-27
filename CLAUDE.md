@@ -42,7 +42,8 @@ IO_Bit と IO_ICC は vendor/ (composer install) か include_path から読む�
 6. GitHub リリース
    - これまで GitHub リリースは作っていない。作るよう指示されたら、タイトルは変更の要約にし、利用者が読んで分かる言葉で書く。
 7. Wiki
-   - Wiki はまだ作られていない (GitHub の Web 画面で最初のページを作るまで `git@github.com:yoya/IO_ISOBMFF.wiki.git` は存在しない)。この手順は飛ばす。
+   - Wiki は別リポジトリ (`git@github.com:yoya/IO_ISOBMFF.wiki.git`)。Home (紹介・インストール・ページ一覧)、Design (設計・実装詳細・既知の制限)、Usage (コード例)、API (メソッド一覧)、Samples (sample/ のスクリプトの使い方) のページがある。
+   - 今回の変更で古くなった記述が無いか見て、あれば直す (既知の制限に書いた不具合を直したら、その行も消す)。README と食い違わないようにする。
 8. 反映の確認
    - Packagist (`yoya/io_isobmff`) に新しい版が反映されていることを確かめる (リリースを作ったなら、最新版として見えていることも)。
 
