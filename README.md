@@ -172,3 +172,9 @@ file_put_contents('output.avif', $isobmff->build());
 
 - https://github.com/yoya/IO_HEIF
 - https://github.com/yoya/IO_AVIF
+
+## IO_Bit の利用箇所
+
+`buildBox()` は box の内容を書いてサイズを求め、`setUI32BE()` でヘッダの長さを後から埋めます。
+
+[IO_Bit Wiki](https://github.com/yoya/IO_Bit/wiki)
