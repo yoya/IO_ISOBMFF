@@ -1465,8 +1465,8 @@ class IO_ISOBMFF {
         $boxLength = $headerSize + $dataLength;
         if ($headerSize === 16) {
             $bit->setUI32BE(1, $boxOffset);
-            $bit->setUI32BE(intdiv($boxLength, 0x100000000), $boxOffset + 8);
-            $bit->setUI32BE($boxLength % 0x100000000, $boxOffset + 12);
+            $bit->setUI32BE(($boxLength >> 32) & 0xffffffff, $boxOffset + 8);
+            $bit->setUI32BE($boxLength & 0xffffffff, $boxOffset + 12);
         } else {
             $bit->setUI32BE($boxLength, $boxOffset);
         }
