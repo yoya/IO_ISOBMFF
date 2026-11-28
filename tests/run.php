@@ -253,6 +253,7 @@ check('pitm v1 rebuild', $data, rebuild($data));
 $data = fullbox('pitm', 0, 0, pack('n', 7));
 check('pitm v0 itemID', 7, firstBox(parseISOBMFF($data), 'pitm')['itemID']);
 check('pitm v0 rebuild', $data, rebuild($data));
+check('pitm description', 'Primary Item reference', getTypeDescription('pitm'));
 
 /*
  * tkhd: layer and alternate_group are 16 bits

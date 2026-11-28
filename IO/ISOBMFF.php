@@ -23,7 +23,7 @@ function getTypeDescription($type) {
         "moov" => "Movie Box",
         //
         "hdlr" => "Handler reference",
-        "pitm" => "Prinary Item reference",
+        "pitm" => "Primary Item reference",
         "iloc" => "Item Location",
         "iinf" => "Item Information",
         "infe" => "Item Information Entry",
