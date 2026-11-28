@@ -335,7 +335,11 @@ class IO_ISOBMFF {
         case "pitm":
             $box["version"] = $bit->getUI8();
             $box["flags"] = $bit->getUIBits(8 * 3);
-            $box["itemID"] = $bit->getUI16BE();
+            if ($box["version"] == 0) {
+                $box["itemID"] = $bit->getUI16BE();
+            } else {
+                $box["itemID"] = $bit->getUI32BE();
+            }
             break;
         case "hvcC":
             // https://gist.github.com/yohhoy/2abc28b611797e7b407ae98faa7430e7
@@ -1320,7 +1324,11 @@ class IO_ISOBMFF {
             case "pitm":
                 $bit->putUI8($box["version"]);
                 $bit->putUIBits($box["flags"], 8 * 3);
-                $bit->putUI16BE($box["itemID"]);
+                if ($box["version"] == 0) {
+                    $bit->putUI16BE($box["itemID"]);
+                } else {
+                    $bit->putUI32BE($box["itemID"]);
+                }
                 break;
             case "hvcC":
                 $bit->putUI8($box["version"]);

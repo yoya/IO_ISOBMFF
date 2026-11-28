@@ -245,6 +245,16 @@ check('iloc v2 extent', [['extentOffset' => 0x11111111, 'extentIndex' => 0, 'ext
 check('iloc v2 rebuild', $data, rebuild($data));
 
 /*
+ * pitm: item_ID is 32 bits in version 1
+ */
+$data = fullbox('pitm', 1, 0, pack('N', 0x10007));
+check('pitm v1 itemID', 0x10007, firstBox(parseISOBMFF($data), 'pitm')['itemID']);
+check('pitm v1 rebuild', $data, rebuild($data));
+$data = fullbox('pitm', 0, 0, pack('n', 7));
+check('pitm v0 itemID', 7, firstBox(parseISOBMFF($data), 'pitm')['itemID']);
+check('pitm v0 rebuild', $data, rebuild($data));
+
+/*
  * tkhd: layer and alternate_group are 16 bits
  */
 $data = fullbox('tkhd', 0, 3, pack('NNNNN', 1, 2, 1, 0, 100).str_repeat("\0", 8).
