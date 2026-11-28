@@ -1004,5 +1004,55 @@ foreach ($names as $name) {
     check("truncated sweep $name", $expect, $actual);
 }
 
+/*
+ * sample tools on the test data: exit status 0, no PHP warnings
+ */
+// [exit code, stdout, PHP errors]
+function sampleRun($script, $args) {
+    global $root;
+    list($code, $out, $err) = runPHP(array_merge(["$root/sample/$script"], $args));
+    return [$code, $out, phpErrors($err.$out)];
+}
+foreach (['items.heic', 'idat_grid.heic', 'wide.heif'] as $name) {
+    $path = "$dataDir/$name";
+    $data = file_get_contents($path);
+    foreach ([['isobmffdump.php', []], ['isobmffdump.php', ['-t']], ['isobmffdump.php', ['-h']],
+              ['isobmfftree.php', []], ['isobmffitems.php', []], ['isobmffitems.php', ['-t']],
+              ['isobmffprops.php', []], ['isobmffprops.php', ['-t']]] as $run) {
+        list($script, $args) = $run;
+        list($code, $out, $errors) = sampleRun($script, array_merge(['-f', $path], $args));
+        check("$script ".implode(' ', $args)." $name", [0, [], true], [$code, $errors, strlen($out) > 0]);
+    }
+    list($code, $out, $errors) = sampleRun('isobmffrebuild.php', ['-f', $path]);
+    check("isobmffrebuild.php $name", [0, [], bin2hex($data)], [$code, $errors, bin2hex($out)]);
+    list($code, $out, $errors) = sampleRun('isobmffdelbox.php', ['-f', $path, '-t', 'iref']);
+    check("isobmffdelbox.php $name", [0, [], false, itemData($data)],
+          [$code, $errors, strpos($out, 'iref'), itemData($out)]);
+    list($code, $out, $errors) = sampleRun('isobmffaddiccp.php', ['-f', $path, '-p', "$dataDir/tiny.icc"]);
+    $props = firstBox(parseISOBMFF($out), 'ipco')['boxList'];
+    check("isobmffaddiccp.php $name", [0, [], 'prof', itemData($data)],
+          [$code, $errors, $props[count($props) - 1]['subtype'], itemData($out)]);
+}
+list($code, $out, $errors) = sampleRun('isobmffitems.php', ['-f', "$dataDir/items.heic", '-t']);
+check('isobmffitems.php -t list', "pitm  itemID:1\ninfe  type:hvc1  itemID:1\ninfe  type:hvc1  itemID:2\n".
+      "infe  type:Exif  itemID:3\ninfe  type:mime  itemID:4\nthmb  itemID:2\ncdsc  itemID:3\ncdsc  itemID:4\n", $out);
+list($code, $out, $errors) = sampleRun('isobmffprops.php', ['-f', "$dataDir/items.heic", '-t']);
+check('isobmffprops.php -t list', "hvcC  index:1\nispe  index:2\nispe  index:3\ncolr  index:4  nclx\npixi  index:5\n".
+      "irot  index:6\npasp  index:7\nclap  index:8\n", $out);
+list($code, $out, $errors) = sampleRun('isobmffitems.php', ['-f', "$dataDir/idat_grid.heic", '-t', '-i', '6']);
+check('isobmffitems.php -i auxl', [0, "infe  type:hvc1  itemID:6\nauxl  urn:mpeg:hevc:2015:auxid:1  itemID:6\n"], [$code, $out]);
+$path = "$dataDir/movie.mp4";
+foreach ([['isobmffdump.php', ['-f', $path]], ['isobmffdump.php', ['-f', $path, '-t']], ['isobmffitems.php', ['-f', $path]]] as $run) {
+    list($code, $out, $errors) = sampleRun($run[0], $run[1]);
+    check("$run[0] ".implode(' ', array_slice($run[1], 2))." movie.mp4", [0, []], [$code, $errors]);
+}
+list($code, $out, $errors) = sampleRun('isobmffrebuild.php', ['-f', $path]);
+check('isobmffrebuild.php movie.mp4', [0, [], bin2hex(file_get_contents($path))], [$code, $errors, bin2hex($out)]);
+// broken input: exit status 1 with an error message
+foreach (['isobmffdump.php', 'isobmfftree.php', 'isobmffitems.php', 'isobmffprops.php', 'isobmffrebuild.php'] as $script) {
+    list($code, $out, $errors) = sampleRun($script, ['-f', "$dataDir/truncated.heic"]);
+    check("$script truncated.heic", [1, [], 0], [$code, $errors, strpos($out, 'ERROR: ')]);
+}
+
 echo "passed: $passed, failed: $failed".PHP_EOL;
 exit($failed ? 1 : 0);
