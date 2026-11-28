@@ -135,7 +135,7 @@ file_put_contents('output.avif', $isobmff->build());
   and the item (base_offset or the first extent) and each extent remember their position relative to the mdat start (`_offsetRelative`).
   At build, the iloc offset fields are rewritten from the new mdat position. Items in idat (construction_method 1) and externally referenced items are not rewritten.
 - Boxes with size 0 (to the end of the file) are read (to the end of the parent inside another box). build writes size 0 again if the box is still the last top-level box, otherwise it writes the size.
-- Field widths that depend on the box version are handled (32-bit IDs and counts of iloc v2, iinf v1, infe v3, iref v1, ipma v1).
+- Field widths that depend on the box version are handled (32-bit IDs and counts of iloc v2, iinf v1, infe v3, iref v1, ipma v1, pitm v1).
 
 # Features
 
@@ -151,7 +151,16 @@ file_put_contents('output.avif', $isobmff->build());
 # Known limitations
 
 - Items that use base_offset and whose extents span several mdats are not moved correctly by build (only base_offset is rewritten).
-- `removeBoxByType()` fixes only the ipma property indices. For example, removing an infe leaves the item in iloc and iref.
+- `removeBoxByType()` fixes only the ipma property indices. For example, removing an infe leaves the item in iloc and iref. Removing ipco itself leaves ipma.
+- `appendICCProfile()` adds another colr (prof) even to items that already have one. When bit 0 of the ipma flags is 0, property indices are written in 7 bits, so the 128th and later properties cannot be referenced.
+- The tables of `getItemBoxesByItemID()`, `getPropBoxesByItemID()`, `getPropBoxesByPropIndex()` and `propTree` / `itemTree` are kept as first built. After `removeBoxByType()` or `appendICCProfile()` they return stale contents, so parse the written output again.
+- Unless there is exactly one ipco and one ipma, `getPropBoxesByItemID()` and the like throw an exception.
+- Files whose hdlr name is not NUL-terminated cannot be read, with or without `restrict`.
+- Changed values of boxes that build does not rebuild (mvhd, tkhd, auxC, unknown boxes) are not written. Adding such a box without `_offset` writes part of the original data as its content.
+- Properties such as a1op, a1lx, clli, mdcv and the boxes under minf are not parsed (build copies the original bytes).
+- `tree()` does not print the content of av1C. A grid item is read from the start of idat (correct only when the grid is the first item in idat).
+- `isobmffprops.php -i <index>` prints nothing. `isobmffitems.php -t` warns on infe of version 0 and 1.
+- `getTypeDescription()` and other helpers are defined as global functions, so this cannot be loaded together with another library that defines functions of the same names.
 
 # Test
 

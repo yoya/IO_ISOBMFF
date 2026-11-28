@@ -137,7 +137,7 @@ file_put_contents('output.avif', $isobmff->build());
   item (base_offset か最初の extent) と各 extent に mdat 先頭からの相対位置 (`_offsetRelative`) を覚える。
   build 時、mdat の新しい位置から iloc のオフセットの欄を書き直す。idat の中の item (construction_method 1) と外部参照の item は書き直さない。
 - サイズ 0 (ファイルの終わりまで) の box も読める (親の box の中なら親の終わりまで)。build は、それが最上位の最後の box のままならサイズ 0 で書き、そうでなければサイズを書く。
-- box の version による欄の幅の違い (iloc v2, iinf v1, infe v3, iref v1, ipma v1 の 32bit の ID や個数) に対応している。
+- box の version による欄の幅の違い (iloc v2, iinf v1, infe v3, iref v1, ipma v1, pitm v1 の 32bit の ID や個数) に対応している。
 
 # 機能
 
@@ -153,7 +153,16 @@ file_put_contents('output.avif', $isobmff->build());
 # 既知の制限
 
 - base_offset を使う item の extent が複数の mdat にまたがると、build で正しく移せない (書き直すのは base_offset だけ)。
-- `removeBoxByType()` が直すのは ipma の property の番号だけ。例えば infe を消しても iloc や iref の item はそのまま残る。
+- `removeBoxByType()` が直すのは ipma の property の番号だけ。例えば infe を消しても iloc や iref の item はそのまま残る。ipco そのものを消しても ipma は残る。
+- `appendICCProfile()` は、すでに colr (prof) がある item にも、もう 1 つ足す。ipma の flags の bit 0 が 0 だと property 番号は 7 ビットで書かれるので、128 番目以降の property を指せない。
+- `getItemBoxesByItemID()`, `getPropBoxesByItemID()`, `getPropBoxesByPropIndex()` の表と、`propTree` / `itemTree` は最初に作ったまま。`removeBoxByType()` や `appendICCProfile()` のあとは古い内容を返すので、書き出したものを parse し直して使う。
+- ipco と ipma がそれぞれ 1 つでないと、`getPropBoxesByItemID()` などは例外になる。
+- hdlr の名前が NUL で終わっていないファイルは、`restrict` に関係なく読めない。
+- build で作り直さない box (mvhd, tkhd, auxC, 知らない box) は、値を書き換えても反映されない。`_offset` の無いこの種類の box を足すと、元のデータの一部が中身として書かれてしまう。
+- a1op, a1lx, clli, mdcv などの property や、minf より下の box は解釈しない (build では元のバイト列を写す)。
+- `tree()` は av1C の中身を出さない。grid の item は idat の先頭から読む (grid が idat の最初の item のときだけ正しい)。
+- `isobmffprops.php -i <番号>` は何も表示しない。`isobmffitems.php -t` は version 0, 1 の infe で警告が出る。
+- `getTypeDescription()` などをグローバル関数として定義しているので、同じ名前の関数を定義する他のライブラリと一緒には読めない。
 
 # Test
 
