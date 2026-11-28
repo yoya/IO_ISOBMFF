@@ -356,7 +356,6 @@ class IO_ISOBMFF {
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
-                    var_dump($box);
                     throw new Exception($mesg);
                 }
             }
@@ -367,7 +366,6 @@ class IO_ISOBMFF {
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
-                    var_dump($box);
                     throw new Exception($mesg);
                 }
             }
@@ -378,7 +376,6 @@ class IO_ISOBMFF {
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
-                    var_dump($box);
                     throw new Exception($mesg);
                 }
             }
@@ -389,7 +386,6 @@ class IO_ISOBMFF {
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
-                    var_dump($box);
                     throw new Exception($mesg);
                 }
             }
@@ -400,7 +396,6 @@ class IO_ISOBMFF {
                 if (empty($opts['restrict'])) {
                     fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
                 } else {
-                    var_dump($box);
                     throw new Exception($mesg);
                 }
             }
@@ -696,7 +691,6 @@ class IO_ISOBMFF {
             if (empty($opts['restrict'])) {
                 fprintf(STDERR, $mesg.PHP_EOL, __LINE__);
             } else {
-                var_dump($box);
                 throw new Exception($mesg);
             }
         }

@@ -366,6 +366,19 @@ try {
 } catch (Exception $e) {
 }
 check('hvcC NAL reserved restrict', true, $e !== null && strpos($e->getMessage(), 'reserved(1)') !== false);
+// restrict throws without printing the box to stdout
+$hvcCBadReserved = box('hvcC', "\x01\x01".pack('N', 0x60000000).str_repeat("\0", 6)."\x5a"."\x00\x00".
+                       "\xfc\xfd\xf8\xf8\x00\x00\x0f\x00");
+$boxLenMismatch = box('free', '').box('ispe', "\0\0\0\0".pack('NN', 1, 1).'xx');
+foreach (['hvcC reserved' => $hvcCBadReserved, 'box length' => $boxLenMismatch] as $name => $bad) {
+    ob_start();
+    try {
+        parseISOBMFF($bad, ['restrict' => true]);
+        $e = null;
+    } catch (Exception $e) {
+    }
+    check("restrict $name no stdout", [true, ''], [$e !== null, ob_get_clean()]);
+}
 ob_start();
 parseISOBMFF($data)->dump();
 check('hvcC NAL reserved dump', 1, substr_count(ob_get_clean(), 'reserved:1 NALUnitType:32'));
